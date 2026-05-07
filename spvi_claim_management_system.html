@@ -1,0 +1,3256 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPVI Claim Management</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='lg' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%235864B4'/%3E%3Cstop offset='1' stop-color='%23E87878'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='12' fill='white'/%3E%3Ctext x='32' y='46' font-family='Arial Black,Arial,sans-serif' font-size='26' font-weight='900' text-anchor='middle' fill='url(%23lg)'%3ESPVI%3C/text%3E%3C/svg%3E">
+<link rel="shortcut icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='lg' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%235864B4'/%3E%3Cstop offset='1' stop-color='%23E87878'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='12' fill='white'/%3E%3Ctext x='32' y='46' font-family='Arial Black,Arial,sans-serif' font-size='26' font-weight='900' text-anchor='middle' fill='url(%23lg)'%3ESPVI%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0D3B66;
+    --blue: #1A5A9A;
+    --blue-light: #D6E8F7;
+    --orange: #E87C2A;
+    --orange-light: #FEF0E4;
+    --success: #27AE60;
+    --danger: #E74C3C;
+    --gray-50: #F8FAFC;
+    --gray-100: #F1F5F9;
+    --gray-200: #E2E8F0;
+    --gray-400: #94A3B8;
+    --gray-600: #475569;
+    --gray-800: #1E293B;
+    --white: #FFFFFF;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--gray-100);
+    color: var(--gray-800);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── TOP NAV ─── */
+  .topbar {
+    background: var(--navy);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; height: 56px;
+    box-shadow: 0 2px 12px rgba(13,59,102,0.4);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo {
+    width: 42px; height: 42px; background: white;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .topbar-title { color: white; font-size: 15px; font-weight: 600; }
+  .topbar-sub { color: rgba(255,255,255,0.55); font-size: 11px; margin-top: 1px; }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .sheets-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px; padding: 4px 12px; color: white; font-size: 12px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sheets-badge:hover { background: rgba(255,255,255,0.18); }
+  .sheets-dot { width: 7px; height: 7px; border-radius: 50%; background: #34A853; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ─── TAB NAV ─── */
+  .tabnav {
+    background: var(--white); border-bottom: 1px solid var(--gray-200);
+    display: flex; padding: 0 24px; gap: 0;
+  }
+  .tab {
+    padding: 14px 20px; font-size: 13.5px; font-weight: 500; color: var(--gray-600);
+    cursor: pointer; border-bottom: 2.5px solid transparent; transition: all 0.2s;
+    display: flex; align-items: center; gap: 7px; white-space: nowrap;
+  }
+  .tab:hover { color: var(--blue); }
+  .tab.active { color: var(--blue); border-bottom-color: var(--orange); font-weight: 600; }
+  .tab-icon { font-size: 15px; }
+  .tab-count {
+    background: var(--blue-light); color: var(--blue); font-size: 10px;
+    font-weight: 700; border-radius: 10px; padding: 1px 7px;
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  .main { padding: 24px; max-width: 1200px; margin: 0 auto; width: 100%; flex: 1 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ─── CONFIG BANNER ─── */
+  .config-banner {
+    background: linear-gradient(135deg, var(--orange-light), #fff8f3);
+    border: 1.5px solid var(--orange); border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 20px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .config-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .config-title { font-weight: 600; color: var(--orange); font-size: 14px; margin-bottom: 4px; }
+  .config-desc { font-size: 12.5px; color: var(--gray-600); line-height: 1.6; }
+  .config-inputs { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .config-input {
+    flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--gray-200);
+    border-radius: 7px; font-size: 12.5px; font-family: 'IBM Plex Mono', monospace;
+    background: white; color: var(--gray-800);
+    transition: border-color 0.2s;
+  }
+  .config-input:focus { outline: none; border-color: var(--orange); }
+  .btn-save-config {
+    padding: 8px 18px; background: var(--orange); color: white; border: none;
+    border-radius: 7px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    font-family: 'Sarabun', sans-serif; transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-save-config:hover { background: #d06e22; }
+
+  /* ─── FORM CARD ─── */
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200);
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .card-header {
+    background: var(--navy); padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { color: white; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .card-accent { width: 4px; height: 18px; background: var(--orange); border-radius: 2px; }
+  .card-body { padding: 20px; }
+
+  /* ─── DOC ID ROW ─── */
+  .docid-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 8px;
+    background: var(--blue-light); border-radius: 8px; padding: 14px 16px;
+  }
+  .docid-field label { font-size: 10.5px; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
+  .docid-value {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;
+    color: var(--navy); background: white; border: 1.5px solid var(--blue);
+    border-radius: 6px; padding: 6px 10px; width: 100%;
+  }
+  .docid-value:focus { outline: none; border-color: var(--orange); }
+
+  /* ─── FORM GRID ─── */
+  .form-grid { display: grid; gap: 14px; }
+  .form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.span-2 { grid-column: span 2; }
+  .field.span-3 { grid-column: span 3; }
+  .field.span-4 { grid-column: span 4; }
+  label.field-label { font-size: 12px; font-weight: 600; color: var(--gray-600); }
+  label.field-label span.req { color: var(--danger); margin-left: 2px; }
+  .field-input {
+    padding: 9px 12px; border: 1.5px solid var(--gray-200); border-radius: 7px;
+    font-size: 13.5px; font-family: 'Sarabun', sans-serif; color: var(--gray-800);
+    background: var(--gray-50); transition: all 0.2s;
+  }
+  .field-input:focus { outline: none; border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(26,90,154,0.08); }
+  .field-input::placeholder { color: var(--gray-400); font-size: 12.5px; }
+  textarea.field-input { resize: vertical; min-height: 72px; }
+  select.field-input { cursor: pointer; }
+
+  /* ─── ITEMS TABLE ─── */
+  .items-section { margin-top: 4px; }
+  .items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .items-table th {
+    background: var(--navy); color: white; padding: 9px 10px;
+    text-align: left; font-size: 11.5px; font-weight: 600;
+  }
+  .items-table th:first-child { border-radius: 6px 0 0 0; width: 40px; text-align: center; }
+  .items-table th:last-child { border-radius: 0 6px 0 0; width: 44px; text-align: center; }
+  .items-table td { padding: 5px 6px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  .items-table tr:nth-child(even) td { background: var(--gray-50); }
+  .items-table tr:hover td { background: var(--blue-light); }
+  .item-input {
+    width: 100%; border: 1px solid transparent; border-radius: 5px; padding: 5px 7px;
+    font-size: 12.5px; font-family: 'Sarabun', sans-serif; background: transparent;
+    color: var(--gray-800);
+  }
+  .item-input:focus { outline: none; border-color: var(--blue); background: white; }
+  .item-input::placeholder { color: var(--gray-400); font-size: 12.5px; }
+  .item-num { text-align: center; font-size: 12px; color: var(--gray-400); font-weight: 600; }
+  .btn-del-row {
+    background: none; border: none; cursor: pointer; color: var(--gray-400);
+    font-size: 16px; transition: color 0.15s; padding: 2px 6px;
+    display: flex; align-items: center; justify-content: center; margin: auto;
+  }
+  .btn-del-row:hover { color: var(--danger); }
+  .btn-add-row {
+    margin-top: 8px; padding: 7px 16px; background: var(--blue-light);
+    color: var(--blue); border: 1.5px dashed var(--blue); border-radius: 7px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: 'Sarabun', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-add-row:hover { background: var(--blue); color: white; border-style: solid; }
+
+  /* ─── CHECKBOXES ─── */
+  .checkbox-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 2px; }
+  .check-item { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .check-item input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; }
+  .check-label { font-size: 13px; color: var(--gray-800); }
+
+  /* ─── ACTION BUTTONS ─── */
+  .action-bar {
+    display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
+    margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--gray-200);
+  }
+  .btn {
+    padding: 10px 22px; border-radius: 8px; font-size: 13.5px; font-weight: 600;
+    cursor: pointer; font-family: 'Sarabun', sans-serif; transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px; border: none;
+  }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: var(--navy); box-shadow: var(--shadow-md); }
+  .btn-orange { background: var(--orange); color: white; }
+  .btn-orange:hover { background: #d06e22; box-shadow: var(--shadow-md); }
+  .btn-blue { background: #2563eb; color: white; }
+  .btn-blue:hover { background: #1d4ed8; box-shadow: var(--shadow-md); }
+  .btn-outline { background: white; color: var(--gray-600); border: 1.5px solid var(--gray-200); }
+  .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #219a52; }
+  .btn-danger-outline { background: white; color: var(--danger); border: 1.5px solid var(--danger); }
+  .btn-danger-outline:hover { background: var(--danger); color: white; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ─── LOG TABLE ─── */
+  .log-toolbar {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .search-box {
+    flex: 1; min-width: 200px; padding: 9px 14px; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; font-size: 13px; font-family: 'Sarabun', sans-serif;
+    background: white;
+  }
+  .search-box:focus { outline: none; border-color: var(--blue); }
+  .filter-select {
+    padding: 9px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px;
+    font-size: 13px; font-family: 'Sarabun', sans-serif; background: white; cursor: pointer;
+  }
+  .log-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  .log-table th {
+    background: var(--gray-100); color: var(--gray-600); font-size: 11.5px;
+    font-weight: 700; padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--gray-200);
+    text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; cursor: pointer;
+  }
+  .log-table th:hover { color: var(--blue); }
+  .log-table td { padding: 11px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  .log-table tr:hover td { background: var(--blue-light); }
+  .log-table tr.selected td { background: #eff6ff; }
+  .mono { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; }
+  .badge {
+    display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-warranty { background: #dcfce7; color: #166534; }
+  .badge-nowarranty { background: #fef9c3; color: #854d0e; }
+  .badge-claim { background: #fee2e2; color: #991b1b; }
+  .badge-inspect { background: #f3e8ff; color: #6b21a8; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; font-weight: 500; }
+  .empty-sub { font-size: 12.5px; margin-top: 4px; }
+
+  /* ─── STATS ─── */
+  .stats-row { display: grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .stat-card {
+    background: white; border-radius: var(--radius); border: 1px solid var(--gray-200);
+    padding: 16px 18px; display: flex; align-items: center; gap: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-icon { font-size: 26px; }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--navy); font-family: 'IBM Plex Mono', monospace; }
+  .stat-label { font-size: 11.5px; color: var(--gray-600); margin-top: 2px; }
+
+  /* ─── TOAST ─── */
+  .toast-container { position: fixed; top: 70px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--gray-800); color: white; padding: 12px 18px; border-radius: 9px;
+    font-size: 13px; min-width: 240px; box-shadow: var(--shadow-lg);
+    animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px;
+  }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+  @keyframes slideIn { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+
+  /* ─── SHEETS CONFIG MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+    display: none; align-items: flex-start; justify-content: center;
+    overflow-y: auto; padding: 14px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 14px; padding: 20px; max-width: 620px; width: min(96vw, 620px);
+    max-height: calc(100vh - 28px); overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal-title { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .modal-sub { font-size: 12.5px; color: var(--gray-600); margin-bottom: 20px; line-height: 1.6; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-label { font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 5px; display: block; }
+  .modal-input {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-200); border-radius: 7px;
+    font-size: 12.5px; font-family: 'IBM Plex Mono', monospace; color: var(--gray-800);
+  }
+  .modal-input:focus { outline: none; border-color: var(--blue); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .script-code {
+    display: block; max-height: 260px; overflow: auto;
+    background: rgba(255,255,255,0.72); border: 1px solid #d1fae5; border-radius: 6px;
+    padding: 10px; font-family: monospace; font-size: 10.5px; white-space: pre;
+    color: #1a4731;
+  }
+  .script-code-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .btn-copy-script {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; font-size: 11px; font-weight: 600;
+    background: #166534; color: white; border: none; border-radius: 5px;
+    cursor: pointer; font-family: 'Sarabun', sans-serif; transition: all 0.18s;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-copy-script:hover { background: #14532d; }
+  .btn-copy-script.copied { background: #15803d; }
+  .steps { background: var(--gray-50); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+  .steps-title { font-size: 12px; font-weight: 700; color: var(--gray-600); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .step { display: flex; gap: 10px; margin-bottom: 8px; font-size: 12px; color: var(--gray-600); line-height: 1.5; }
+  .step-num { background: var(--blue); color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+
+  .status-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+  .status-waiting { background: #fef3c7; color: #92400e; }
+  .status-approved { background: #dcfce7; color: #166534; }
+  .status-rejected { background: #fee2e2; color: #991b1b; }
+  .status-partial { background: #dbeafe; color: #1e3a8a; }
+  .status-partial-approved { background: #ffedd5; color: #9a3412; }
+  .status-done { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+  .approved-qty-input { width: 50px; padding: 2px 5px; border: 1px solid #fdba74; border-radius: 6px; font-size: 12px; margin-left: 6px; text-align: center; }
+
+  #statusModal .modal { max-width: 1100px; width: min(96vw, 1100px); }
+  .status-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .status-table th { background: var(--gray-100); color: var(--gray-600); font-size: 11.5px; text-align: left; padding: 8px 10px; }
+  .status-table td { border-bottom: 1px solid var(--gray-100); padding: 8px 10px; vertical-align: middle; }
+  .status-select { width: 100%; min-width: 150px; padding: 7px 9px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 12.5px; }
+  .waiting-doc-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .waiting-doc-item { border: 1px solid var(--gray-200); border-radius: 8px; padding: 9px 11px; display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; background: #fff; cursor: pointer; transition: all 0.18s; }
+  .waiting-doc-item:hover { border-color: var(--blue); box-shadow: var(--shadow-sm); background: #f8fbff; }
+
+  /* ─── ROW ACTIONS ─── */
+  .row-actions { display: flex; gap: 4px; }
+  .row-btn {
+    padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600;
+    cursor: pointer; font-family: 'Sarabun', sans-serif; border: none; transition: all 0.15s;
+  }
+  .row-btn-view { background: #bfdbfe; color: var(--blue); }
+  .row-btn-view:hover { background: var(--blue); color: white; }
+  .row-btn-del { background: #fee2e2; color: var(--danger); }
+  .row-btn-del:hover { background: var(--danger); color: white; }
+
+  .section-sep { height: 1px; background: var(--gray-100); margin: 4px 0 16px; }
+  .form-section-title { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .form-section-title::after { content: ''; flex: 1; height: 1px; background: var(--blue-light); }
+  
+  .sync-status { font-size: 11px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 5px; }
+  .pending-badge {
+    display: none; align-items: center; gap: 6px;
+    background: rgba(232,124,42,0.25); border: 1px solid rgba(232,124,42,0.6);
+    border-radius: 20px; padding: 4px 12px; color: #fed7aa; font-size: 12px;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .pending-badge:hover { background: rgba(232,124,42,0.4); }
+  .pending-badge.visible { display: flex; }
+
+  .overdue-bell {
+    position: relative;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.26);
+    background: rgba(255,255,255,0.1);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .overdue-bell:hover { background: rgba(255,255,255,0.2); }
+  .overdue-bell.visible { display: inline-flex; }
+  .overdue-bell .bell-icon { font-size: 16px; line-height: 1; }
+  .overdue-bell.has-items .bell-icon { animation: bellRing 2.6s ease-in-out infinite; transform-origin: top center; }
+  .overdue-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--navy);
+  }
+
+  @keyframes bellRing {
+    0%, 35%, 100% { transform: rotate(0deg); }
+    40% { transform: rotate(-15deg); }
+    45% { transform: rotate(12deg); }
+    50% { transform: rotate(-10deg); }
+    55% { transform: rotate(8deg); }
+    60% { transform: rotate(-5deg); }
+    65% { transform: rotate(3deg); }
+  }
+
+  .overdue-modal { max-width: 760px; }
+  .overdue-meta { font-size: 12px; color: var(--gray-600); margin-bottom: 10px; }
+  .overdue-list { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow: auto; }
+  .overdue-item {
+    border: 1px solid #fecaca;
+    background: #fff7f7;
+    border-radius: 9px;
+    padding: 9px 11px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .overdue-item:hover { border-color: #f87171; background: #fff1f1; }
+  .overdue-item-title { font-size: 12.5px; font-weight: 600; color: var(--gray-800); }
+  .overdue-item-sub { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+  .overdue-days-chip {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    white-space: nowrap;
+  }
+
+  .waiting-doc-item.overdue {
+    border-color: #fecaca;
+    background: #fff5f5;
+  }
+  .waiting-doc-item.overdue:hover {
+    border-color: #f87171;
+    background: #ffeaea;
+  }
+  .overdue-pill {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #fca5a5;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+  .log-row-focus td {
+    background: #fff7ed !important;
+    transition: background 0.2s;
+  }
+  
+  .log-actions-bar { display: flex; gap: 8px; margin-top: 12px; }
+  
+  @media (max-width: 980px) {
+    .stats-row { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+  }
+
+  @media (max-width: 700px) {
+    .form-grid.cols-2, .form-grid.cols-3, .form-grid.cols-4 { grid-template-columns: 1fr; }
+    .field.span-2, .field.span-3, .field.span-4 { grid-column: span 1; }
+    .docid-row { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr; }
+    .action-bar { justify-content: stretch; }
+    .btn { justify-content: center; flex: 1; }
+    .modal { padding: 14px; border-radius: 10px; max-height: calc(100vh - 16px); }
+    .script-code { max-height: 210px; }
+  }
+
+  /* ─── SOH IMPORT ─── */
+  .soh-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 6px; padding: 5px 12px; color: white; font-size: 12px;
+    cursor: pointer; transition: all 0.2s; font-family: 'Sarabun', sans-serif;
+    white-space: nowrap;
+  }
+  .soh-badge:hover { background: rgba(255,255,255,0.25); }
+  .soh-loaded { background: rgba(39,174,96,0.3) !important; border-color: rgba(39,174,96,0.6) !important; }
+
+  /* ─── PREVIEW MODAL ─── */
+  #previewModal { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 500; display: none; flex-direction: column; }
+  #previewModal.open { display: flex; }
+  .preview-toolbar {
+    background: var(--navy); padding: 12px 20px;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px;
+  }
+  .preview-title { color: white; font-size: 14px; font-weight: 600; }
+  #previewFrame { flex: 1; border: none; width: 100%; background: white; }
+
+  /* ─── FOOTER ─── */
+  .site-footer {
+    margin: 20px 24px 0;
+    padding: 12px 16px;
+    border-top: 1px solid var(--gray-200);
+    color: var(--gray-600);
+    font-size: 12px;
+    text-align: center;
+    background: rgba(255,255,255,0.7);
+    border-radius: 8px;
+  }
+
+  .site-footer strong { color: var(--navy); }
+
+  @media (max-width: 700px) {
+    .site-footer {
+      margin: 14px 14px 0;
+      font-size: 11.5px;
+      line-height: 1.6;
+    }
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="38" height="38">
+        <defs>
+          <linearGradient id="tlg" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#5864B4"/>
+            <stop offset="1" stop-color="#E87878"/>
+          </linearGradient>
+        </defs>
+        <text x="32" y="46" font-family="Arial Black,Arial,sans-serif" font-size="26" font-weight="900" text-anchor="middle" fill="url(#tlg)">SPVI</text>
+      </svg>
+    </div>
+    <div>
+      <div class="topbar-title">ระบบจัดการใบเคลม / ซ่อมสินค้า</div>
+      <div class="topbar-sub">S P V I Co., Ltd. — Claim & Repair Management</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <div class="sync-status" id="syncStatus">
+      <span>⚪</span> ยังไม่เชื่อมต่อ Google Sheets
+    </div>
+    <button class="overdue-bell" id="overdueBell" onclick="openOverdueModal()" title="งานค้างเกิน 15 วัน">
+      <span class="bell-icon">🔔</span>
+      <span class="overdue-count" id="overdueCount">0</span>
+    </button>
+    <div class="pending-badge" id="pendingBadge" onclick="(async()=>{ await flushPendingQueue(); await flushPendingStatusQueue(); })()" title="กดเพื่อส่งข้อมูลที่ค้างอยู่ไปยัง Google Sheets">
+      <span>⏳</span><span id="pendingCount">0</span> รายการรอส่ง
+    </div>
+    <div class="sheets-badge" onclick="openSheetsModal()">
+      <span class="sheets-dot"></span>
+      <span>Google Sheets</span>
+      <span>⚙️</span>
+    </div>
+  </div>
+</div>
+
+<!-- OVERDUE MODAL -->
+<div class="modal-overlay" id="overdueModal">
+  <div class="modal overdue-modal">
+    <div class="modal-title">🔔 งานค้างเกินกำหนด (มากกว่า 15 วัน)</div>
+    <div class="modal-sub">คลิกเอกสารเพื่อไปยังรายการนั้นในแท็บประวัติเคลม</div>
+    <div class="overdue-meta" id="overdueMeta">-</div>
+    <div class="overdue-list" id="overdueList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeOverdueModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB NAV -->
+<div class="tabnav">
+  <div class="tab active" onclick="switchTab('form')" id="tab-form">
+    <span class="tab-icon">📝</span> กรอกแบบฟอร์ม
+  </div>
+  <div class="tab" onclick="switchTab('log')" id="tab-log">
+    <span class="tab-icon">📋</span> ประวัติเคลม
+    <span class="tab-count" id="logCount">0</span>
+  </div>
+  <div class="tab" onclick="switchTab('stats')" id="tab-stats">
+    <span class="tab-icon">📊</span> สรุป
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- SHEETS MODAL -->
+<div class="modal-overlay" id="sheetsModal">
+  <div class="modal">
+    <div class="modal-title">⚙️ เชื่อมต่อ Google Sheets</div>
+    <div class="modal-sub">บันทึกข้อมูลเคลมลง Google Sheet เรียลไทม์</div>
+    <div class="steps">
+      <div class="steps-title">📌 วิธีตั้งค่า</div>
+      <div class="step"><div class="step-num">1</div><span>เปิด Google Sheet ใหม่ สร้าง Sheet ชื่อ <b>"ClaimLog"</b> และ <b>"Vender"</b></span></div>
+      <div class="step"><div class="step-num">2</div><span>ไปที่ <b>Extensions → Apps Script</b> แล้วสร้าง Web App จาก doPost script (ดูตัวอย่างด้านล่าง)</span></div>
+      <div class="step"><div class="step-num">3</div><span>Deploy → New deployment → Web App → Execute as: Me, Access: Anyone → Copy URL</span></div>
+      <div class="step"><div class="step-num">4</div><span>วาง URL ด้านล่าง แล้วกด บันทึก</span></div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Google Apps Script Web App URL</label>
+      <input class="modal-input" id="scriptUrl" placeholder="https://script.google.com/macros/s/AKfy.../exec" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Sheet ID (optional — สำหรับดูลิงก์)</label>
+      <input class="modal-input" id="sheetId" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" />
+    </div>
+    <div style="background:#f0fdf4;border-radius:7px;padding:10px 13px;font-size:11.5px;color:#166534;margin-bottom:4px;">
+      <div class="script-code-header">
+        <b>📋 Apps Script code (copy → paste ใน Apps Script):</b>
+        <button class="btn-copy-script" id="btnCopyScript" onclick="copyAppScript()">📋 Copy code</button>
+      </div>
+      <code class="script-code" id="appScriptCode">function doPost(e) {
+  var lock = LockService.getDocumentLock();
+  lock.waitLock(30000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('ClaimLog') || ss.getSheets()[0];
+    var payload = JSON.parse(e.postData.contents || '[]');
+    var rows = Array.isArray(payload) ? payload : [payload];
+    if (rows.length === 0) {
+      return ContentService.createTextOutput(JSON.stringify({ status: 'ok', count: 0 }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var action = rows[0]['_action'] || 'append';
+    rows = rows.map(function(r) {
+      var c = {};
+      Object.keys(r).forEach(function(k) { if (k !== '_action') c[k] = r[k]; });
+      return c;
+    });
+
+    if (action === 'updateStatus' && sheet.getLastRow() > 1) {
+      var lastCol  = sheet.getLastColumn();
+      var headers  = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+      var claimNoIdx   = headers.indexOf('เลขที่เอกสาร');
+      var seqIdx       = headers.indexOf('ลำดับสินค้า');
+      var statusRowIdx = headers.indexOf('สถานะรายการ');
+      var statusDocIdx = headers.indexOf('สถานะเอกสาร');
+      var savedAtIdx   = headers.indexOf('บันทึกเมื่อ');
+      var typeIdx      = headers.indexOf('ประเภทบันทึก');
+      var approvedQtyIdx = headers.indexOf('จำนวนอนุมัติ');
+      var bookingNoIdx = headers.indexOf('Booking No.');
+      var cnNumberIdx  = headers.indexOf('CN Number');
+      var claimUpdatedAtIdx = ensureCol_(sheet, headers, 'อัพเดทเมื่อ');
+      var completedAtIdx   = ensureCol_(sheet, headers, 'เสร็จสิ้นเมื่อ');
+      var bookingDateIdx   = ensureCol_(sheet, headers, 'วันที่ Booking');
+      var cnDateIdx        = ensureCol_(sheet, headers, 'วันที่ CN');
+      var dateDiffCnIdx    = ensureCol_(sheet, headers, 'จำนวนวัน Booking→CN');
+      var returnNoIdx      = ensureCol_(sheet, headers, 'เลขที่โอนคืนคลัง');
+      var returnDateIdx    = ensureCol_(sheet, headers, 'วันที่คืนสินค้า');
+      var adjustNoIdx      = ensureCol_(sheet, headers, 'เลขที่ Adjust');
+      var adjustDateIdx    = ensureCol_(sheet, headers, 'วันที่ Adjust');
+      var statusNoteIdx    = ensureCol_(sheet, headers, 'เหตุผลสถานะ');
+      var itemNoteIdx  = headers.indexOf('หมายเหตุสินค้า');
+
+      if (claimNoIdx > -1 && seqIdx > -1 && statusRowIdx > -1) {
+        var lastRow  = sheet.getLastRow();
+        var dataVals = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+        var notFound = [];
+        var updated  = 0;
+
+        rows.forEach(function(row) {
+          var found = false;
+          for (var i = 0; i < dataVals.length; i++) {
+            if (String(dataVals[i][claimNoIdx]) === String(row['เลขที่เอกสาร']) &&
+                String(dataVals[i][seqIdx])    === String(row['ลำดับสินค้า'])) {
+              var sheetRow = i + 2;
+              sheet.getRange(sheetRow, statusRowIdx + 1).setValue(row['สถานะรายการ'] || '');
+              if (statusDocIdx   > -1) sheet.getRange(sheetRow, statusDocIdx   + 1).setValue(row['สถานะเอกสาร'] || '');
+              if (typeIdx        > -1) sheet.getRange(sheetRow, typeIdx        + 1).setValue('อัปเดตสถานะ');
+              if (approvedQtyIdx > -1) sheet.getRange(sheetRow, approvedQtyIdx + 1).setValue(row['จำนวนอนุมัติ'] != null ? row['จำนวนอนุมัติ'] : '');
+              if (bookingNoIdx > -1) sheet.getRange(sheetRow, bookingNoIdx + 1).setValue(row['Booking No.'] != null ? row['Booking No.'] : '');
+              if (cnNumberIdx > -1) sheet.getRange(sheetRow, cnNumberIdx + 1).setValue(row['CN Number'] != null ? row['CN Number'] : '');
+              if (claimUpdatedAtIdx > -1) sheet.getRange(sheetRow, claimUpdatedAtIdx + 1).setValue(row['อัพเดทเมื่อ'] || '');
+              if (completedAtIdx   > -1) sheet.getRange(sheetRow, completedAtIdx   + 1).setValue(row['เสร็จสิ้นเมื่อ'] || '');
+              if (bookingDateIdx   > -1) sheet.getRange(sheetRow, bookingDateIdx   + 1).setValue(row['วันที่ Booking'] || '');
+              if (cnDateIdx        > -1) sheet.getRange(sheetRow, cnDateIdx        + 1).setValue(row['วันที่ CN'] || '');
+              if (dateDiffCnIdx   > -1) sheet.getRange(sheetRow, dateDiffCnIdx   + 1).setValue(row['จำนวนวัน Booking→CN'] != null ? row['จำนวนวัน Booking→CN'] : '');
+              if (returnNoIdx      > -1) sheet.getRange(sheetRow, returnNoIdx      + 1).setValue(row['เลขที่โอนคืนคลัง'] || '');
+              if (returnDateIdx    > -1) sheet.getRange(sheetRow, returnDateIdx    + 1).setValue(row['วันที่คืนสินค้า'] || '');
+              if (adjustNoIdx      > -1) sheet.getRange(sheetRow, adjustNoIdx      + 1).setValue(row['เลขที่ Adjust'] || '');
+              if (adjustDateIdx    > -1) sheet.getRange(sheetRow, adjustDateIdx    + 1).setValue(row['วันที่ Adjust'] || '');
+              if (statusNoteIdx    > -1) sheet.getRange(sheetRow, statusNoteIdx    + 1).setValue(row['เหตุผลสถานะ'] || '');
+              if (itemNoteIdx > -1) sheet.getRange(sheetRow, itemNoteIdx + 1).setValue(row['หมายเหตุสินค้า'] != null ? row['หมายเหตุสินค้า'] : '');
+              updated++;
+              found = true;
+              break;
+            }
+          }
+          if (!found) notFound.push(row);
+        });
+
+        if (notFound.length) appendRows_(sheet, notFound);
+        return ContentService.createTextOutput(
+          JSON.stringify({ status: 'ok', updated: updated, appended: notFound.length })
+        ).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    return appendRows_(sheet, rows);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function ensureCol_(sheet, headers, colName) {
+  var idx = headers.indexOf(colName);
+  if (idx === -1) {
+    idx = headers.length;
+    sheet.getRange(1, idx + 1).setValue(colName);
+    headers.push(colName);
+  }
+  return idx;
+}
+
+function appendRows_(sheet, rows) {
+  var headers  = Object.keys(rows[0]);
+  var firstRow = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  var hasSameHeader = headers.every(function(h, i) {
+    return String(firstRow[i] || '').trim() === h;
+  });
+  if (!hasSameHeader) {
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(headers);
+    } else {
+      sheet.insertRows(1, 1);
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    }
+  }
+  var values = rows.map(function(r) {
+    return headers.map(function(h) { return r[h] == null ? '' : r[h]; });
+  });
+  sheet.getRange(sheet.getLastRow() + 1, 1, values.length, headers.length).setValues(values);
+  return ContentService.createTextOutput(
+    JSON.stringify({ status: 'ok', count: values.length })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+function serializeSheetValue_(header, value, tz) {
+  if (!(value instanceof Date) || isNaN(value)) return value;
+  var dateOnlyColumns = {
+    'วันที่': true,
+  };
+  if (dateOnlyColumns[String(header)]) {
+    return Utilities.formatDate(value, tz, 'yyyy-MM-dd');
+  }
+  return Utilities.formatDate(value, tz, "yyyy-MM-dd'T'HH:mm:ssXXX");
+}
+
+function serializeRow_(headers, row, tz) {
+  var obj = {};
+  headers.forEach(function(h, i) {
+    obj[String(h)] = serializeSheetValue_(h, row[i], tz);
+  });
+  return obj;
+}
+
+function doGet(e) {
+  var params = (e && e.parameter) ? e.parameter : {};
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var tz = ss.getSpreadsheetTimeZone() || Session.getScriptTimeZone() || 'Asia/Bangkok';
+
+  if (params.sheet === 'Vender') {
+    var vSheet = ss.getSheetByName('Vender');
+    if (!vSheet || vSheet.getLastRow() < 2) {
+      return ContentService.createTextOutput(JSON.stringify([]))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var vLastCol = vSheet.getLastColumn();
+    var vHeaders = vSheet.getRange(1, 1, 1, vLastCol).getValues()[0];
+    var vData    = vSheet.getRange(2, 1, vSheet.getLastRow() - 1, vLastCol).getValues();
+    var vRows = vData
+      .filter(function(r) { return String(r[0]).trim() !== ''; })
+      .map(function(row) {
+        return serializeRow_(vHeaders, row, tz);
+      });
+    return ContentService.createTextOutput(JSON.stringify(vRows))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var sheet   = ss.getSheetByName('ClaimLog') || ss.getSheets()[0];
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return ContentService.createTextOutput(JSON.stringify([]))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var data    = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var rows = data.map(function(row) { return serializeRow_(headers, row, tz); });
+  return ContentService.createTextOutput(JSON.stringify(rows))
+    .setMimeType(ContentService.MimeType.JSON);
+}</code>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeSheetsModal()">ยกเลิก</button>
+      <button class="btn btn-orange" onclick="openSheetLink()" id="btnOpenSheet" style="display:none">📄 เปิด Sheet</button>
+      <button class="btn btn-success" id="btnRestoreFromSheets" onclick="restoreFromSheets()" style="display:none;" title="กู้คืนข้อมูลที่หายจาก localStorage กลับจาก Google Sheets">🔄 กู้คืนจาก Sheets</button>
+      <button class="btn btn-primary" onclick="saveSheetsConfig()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+  <!-- STATUS UPDATE MODAL -->
+  <div class="modal-overlay" id="statusModal">
+    <div class="modal">
+      <div class="modal-title">📌 อัปเดตสถานะรายการในใบเคลม</div>
+      <div class="modal-sub" id="statusModalSub">-</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div class="modal-field" style="margin-bottom:0;">
+          <label class="modal-label">📦 Booking No. (เลขจัดส่ง)</label>
+          <input class="modal-input" id="claimBookingNo" placeholder="เช่น CA1234/001" oninput="onBookingNoInput()" />
+          <div style="margin-top:4px;">
+            <label style="font-size:10px;color:var(--gray-400);display:block;margin-bottom:2px;">📅 วันที่ Booking</label>
+            <input class="modal-input" type="date" id="claimBookingDate" style="font-size:12px;padding:5px 9px;" />
+          </div>
+        </div>
+        <div class="modal-field" style="margin-bottom:0;">
+          <label class="modal-label">🔄 CN Number (เครดิตโน้ต)</label>
+          <input class="modal-input" id="claimCnNumber" placeholder="เช่น CNA2601-00001" oninput="onCnNumberInput()" />
+          <div style="margin-top:4px;">
+            <label style="font-size:10px;color:var(--gray-400);display:block;margin-bottom:2px;">📅 วันที่ CN</label>
+            <input class="modal-input" type="date" id="claimCnDate" style="font-size:12px;padding:5px 9px;" />
+          </div>
+        </div>
+        <div class="modal-field" style="margin-bottom:0;">
+          <label class="modal-label">🔄 เลขที่โอนคืนคลัง</label>
+          <input class="modal-input" id="claimReturnNo" placeholder="เช่น TRB000260101123" oninput="onReturnNoInput()" />
+          <div id="claimReturnDateDisplay" style="font-size:11px;color:var(--gray-500);margin-top:3px;min-height:16px;"></div>
+        </div>
+        <div class="modal-field" style="margin-bottom:0;">
+          <label class="modal-label">📋 เลขที่ Adjust</label>
+          <input class="modal-input" id="claimAdjustNo" placeholder="เช่น AI260101001" oninput="onAdjustNoInput()" />
+          <div id="claimAdjustDateDisplay" style="font-size:11px;color:var(--gray-500);margin-top:3px;min-height:16px;"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0;box-shadow:none;border:1px solid var(--gray-200);">
+        <div class="card-body" style="padding:0;">
+          <div style="max-height:480px;overflow:auto;">
+            <table class="status-table">
+              <thead>
+                <tr>
+                  <th style="width:40px;">#</th>
+                  <th style="width:110px;">SKU</th>
+                  <th>รายละเอียด / รุ่น</th>
+                  <th style="width:150px;">Serial No.</th>
+                  <th style="width:70px;">จำนวน</th>
+                  <th style="width:90px;">มูลค่า (บาท/ชิ้น)</th>
+                  <th style="width:200px;">สถานะรายการ / จำนวนอนุมัติ</th>
+                  <th style="width:170px;">เหตุผลสถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="statusTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeStatusModal()">ปิด</button>
+        <button class="btn btn-warning" id="btnClosePartialJob" onclick="closePartialJob()" style="display:none;background:#f59e0b;color:white;border:none;" title="ปิดงาน — ยืนยันว่าจำนวนที่อนุมัติบางส่วนคือผลสุดท้าย">✓ ปิดงาน (ดำเนินการบางส่วน)</button>
+        <button class="btn btn-primary" onclick="saveClaimStatusUpdates()">💾 บันทึกสถานะ</button>
+      </div>
+    </div>
+  </div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ═══ FORM VIEW ═══ -->
+  <div class="view active" id="view-form">
+
+    <!-- DOC IDs -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-accent"></div>รหัสเอกสาร</div>
+        <button class="btn btn-outline" onclick="generateDocIds()" style="padding:5px 14px;font-size:12px;">🔄 สร้างรหัสใหม่</button>
+      </div>
+      <div class="card-body">
+        <div class="docid-row">
+          <div class="docid-field">
+            <label>เลขที่ใบรับซ่อม</label>
+            <input class="docid-value" id="docNo" value="H-SPVI2604240000" />
+          </div>
+          <div class="docid-field">
+            <label>เลขที่เอกสาร</label>
+            <input class="docid-value" id="claimNo" value="CL-2604240000" />
+          </div>
+          <div class="docid-field">
+            <label>วันที่</label>
+            <input class="docid-value" type="date" id="docDate" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SENDER / RECEIVER -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-accent"></div>ข้อมูลผู้ส่งและผู้รับ</div>
+      </div>
+      <div class="card-body">
+        <div class="form-section-title">📤 ผู้ส่ง (FROM)</div>
+        <div class="form-grid cols-2">
+          <div class="field">
+            <label class="field-label">บริษัทผู้ส่ง <span class="req">*</span></label>
+            <input class="field-input" id="senderCompany" value="บริษัท เอส พี วี ไอ จำกัด (มหาชน)" />
+          </div>
+          <div class="field">
+            <label class="field-label">ผู้ติดต่อ</label>
+            <input class="field-input" id="senderContact" value="คุณน้ำผึ้ง" />
+          </div>
+          <div class="field span-2">
+            <label class="field-label">ที่อยู่</label>
+            <input class="field-input" id="senderAddress" value="2 อาคารพรีเมียร์เพลช ชั้น1 โซนA ซอยพรีเมียร์ 2 ถนนศรีนครินทร์ แขวงหนองบอน เขตประเวศ กรุงเทพฯ 10250" />
+          </div>
+          <div class="field">
+            <label class="field-label">เบอร์โทร</label>
+            <input class="field-input" id="senderPhone" value="095-372-5546" />
+          </div>
+        </div>
+
+        <div class="section-sep"></div>
+        <div class="form-section-title">📥 ส่งถึง / ศูนย์รับซ่อม (TO)</div>
+        <div class="form-grid cols-2">
+          <div class="field">
+            <label class="field-label">บริษัทผู้รับ <span class="req">*</span></label>
+            <select class="field-input" id="receiverCompany" onchange="applyReceiverPreset()">
+              <option value="" disabled selected>⏳ กำลังโหลดรายชื่อ vendor...</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">ผู้ติดต่อ</label>
+            <input class="field-input" id="receiverContact" />
+          </div>
+          <div class="field span-2">
+            <label class="field-label">ที่อยู่</label>
+            <input class="field-input" id="receiverAddress" />
+          </div>
+          <div class="field">
+            <label class="field-label">เบอร์โทร</label>
+            <input class="field-input" id="receiverPhone" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-accent"></div>รายการสินค้าที่ส่งซ่อม / เคลม</div>
+        <button class="soh-badge" id="btnImportSOH" onclick="importSOH()" title="นำเข้าไฟล์ SOH (.xlsx/.csv) เพื่อค้นหาสินค้าอัตโนมัติเมื่อสแกนบาร์โค้ด">
+          📦 นำเข้า SOH
+        </button>
+      </div>
+      <div class="card-body items-section">
+        <table class="items-table" id="itemsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th style="min-width:110px;">SKU / บาร์โค้ด</th>
+              <th>รายละเอียดสินค้า / รุ่น</th>
+              <th>Serial No.</th>
+              <th>จำนวน</th>
+              <th>มูลค่า (บาท/ชิ้น)</th>
+              <th>หมายเหตุ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody"></tbody>
+          <tfoot id="itemsFoot"><tr><td colspan="4" style="text-align:right;font-weight:700;padding:6px 8px;">รวมจำนวน</td><td style="text-align:center;font-weight:700;padding:6px 8px;" id="totalQty">0</td><td colspan="3"></td></tr></tfoot>
+        </table>
+        <button class="btn-add-row" onclick="addItemRow()">＋ เพิ่มรายการ</button>
+      </div>
+    </div>
+
+    <!-- CONDITION & TYPE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-accent"></div>อาการ / เงื่อนไข</div>
+      </div>
+      <div class="card-body">
+        <div class="form-grid cols-2">
+          <div class="field span-2">
+            <label class="field-label">อาการเสีย / ปัญหาที่พบ <span class="req">*</span></label>
+            <textarea class="field-input" id="symptom" placeholder="อธิบายอาการเสียโดยละเอียด เช่น เปิดไม่ติด, จอแตก, ชาร์จไม่เข้า..."></textarea>
+          </div>
+          <div class="field span-2">
+            <label class="field-label">ประเภทการส่ง</label>
+            <div class="checkbox-group" id="claimTypeGroup">
+              <label class="check-item"><input type="checkbox" value="ซ่อม (ในประกัน)" name="claimType" onchange="syncClaimType()" /> <span class="check-label">ซ่อม (ในประกัน)</span></label>
+              <label class="check-item"><input type="checkbox" value="ซ่อม (นอกประกัน)" name="claimType" onchange="syncClaimType()" /> <span class="check-label">ซ่อม (นอกประกัน)</span></label>
+              <label class="check-item"><input type="checkbox" value="เคลม / เปลี่ยนสินค้า" name="claimType" onchange="syncClaimType()" /> <span class="check-label">เคลม / เปลี่ยนสินค้า</span></label>
+              <label class="check-item"><input type="checkbox" value="คืนสินค้า" name="claimType" onchange="syncClaimType()" /> <span class="check-label">คืนสินค้า</span></label>
+              <label class="check-item"><input type="checkbox" value="ตรวจสภาพ" name="claimType" onchange="syncClaimType()" /> <span class="check-label">ตรวจสภาพ</span></label>
+            </div>
+          </div>
+          <div class="field span-2">
+            <label class="field-label">หมายเหตุเพิ่มเติม</label>
+            <textarea class="field-input" id="notes" placeholder="หมายเหตุอื่นๆ..." style="min-height:52px;"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="action-bar">
+      <button class="btn btn-outline" onclick="clearForm()">🗑️ ล้างฟอร์ม</button>
+      <button class="btn btn-outline" onclick="openFormPreview()">👁️ ดูตัวอย่าง</button>
+      <button class="btn btn-primary" onclick="saveToLog()">💾 บันทึกเข้า Log</button>
+      <button class="btn btn-orange" onclick="saveAndPreview()">🖨️ บันทึก & Export PDF</button>
+    </div>
+  </div>
+
+  <!-- ═══ LOG VIEW ═══ -->
+  <div class="view" id="view-log">
+    <div class="log-toolbar">
+      <input class="search-box" id="searchBox" placeholder="🔍 ค้นหาเลขที่เอกสาร, บริษัท, รายการ..." oninput="filterLog()" />
+      <select class="filter-select" id="typeFilter" onchange="filterLog()">
+        <option value="">ทุกประเภท</option>
+        <option value="ในประกัน">ในประกัน</option>
+        <option value="นอกประกัน">นอกประกัน</option>
+        <option value="เคลม">เคลม</option>
+        <option value="คืนสินค้า">คืนสินค้า</option>
+        <option value="ตรวจสภาพ">ตรวจสภาพ</option>
+      </select>
+      <button class="btn btn-outline" onclick="exportCSV()" style="padding:9px 16px;font-size:13px;">📥 Export CSV</button>
+      <button class="btn btn-outline" id="btnOpenSheetLog" onclick="openSheetLink()" style="padding:9px 16px;font-size:13px;display:none;">📄 เปิด Sheet</button>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:0;">
+        <div id="logTableWrap"></div>
+      </div>
+    </div>
+    <div class="log-actions-bar">
+      <button class="btn btn-danger-outline" onclick="clearAllLog()" style="font-size:12px;padding:7px 14px;">🗑️ ล้าง Log ทั้งหมด</button>
+    </div>
+  </div>
+
+  <!-- ═══ STATS VIEW ═══ -->
+  <div class="view" id="view-stats">
+    <div class="stats-row" id="statsRow"></div>
+    <div class="card">
+      <div class="card-header"><div class="card-title"><div class="card-accent"></div>สรุปตามประเภทการเคลม</div></div>
+      <div class="card-body" id="statsBody"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  &copy; 2026 <strong>Kankit Pumcharern</strong> All rights reserved.
+</footer>
+
+<!-- SOH file input (hidden) -->
+<input type="file" id="sohFileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleSOHFile(event)" />
+
+<!-- PREVIEW MODAL -->
+<div id="previewModal">
+  <div class="preview-toolbar">
+    <span class="preview-title">👁️ ตัวอย่างเอกสาร (Preview)</span>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-orange" onclick="exportPDFFromModal()" style="padding:7px 18px;font-size:12.5px;">🖨️ Export PDF</button>
+      <button onclick="closePreviewModal()" style="padding:7px 14px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);border-radius:7px;color:white;cursor:pointer;font-size:13px;font-family:'Sarabun',sans-serif;">✕ ปิด</button>
+    </div>
+  </div>
+  <iframe id="previewFrame"></iframe>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let claimLog = JSON.parse(localStorage.getItem('spvi_claimLog') || '[]');
+let pendingQueue       = JSON.parse(localStorage.getItem('spvi_pendingQueue')       || '[]');
+let pendingStatusQueue = JSON.parse(localStorage.getItem('spvi_pendingStatusQueue') || '[]');
+let scriptUrl = localStorage.getItem('spvi_scriptUrl') || 'https://script.google.com/macros/s/AKfycbwPGpMd05Rt2rJqL5lYPGoaBKfgICSvYmJ_uW5PiXoWK4e5tLU8v8wNvoikcJ8w3TDC/exec';
+let sheetId   = localStorage.getItem('spvi_sheetId') || '1LxVpsuRC648D3H-Puq5pSATSuKutiO3BmHttLRDR_us';
+let vendorListCache = JSON.parse(localStorage.getItem('spvi_vendorList') || 'null');
+let selectedTypes = [];
+let sohData = {};
+let lastPreviewData = null;
+let thaiFontLoadPromise = null;
+let activeStatusClaimIndex = -1;
+let _waitingRowsCache = [];
+let _logFilteredRows = null;
+let logFocusClaimIndex = -1;
+const OVERDUE_DAY_THRESHOLD = 15;
+const NOTE_PRESETS = ['ฟิล์มเสีย', 'ฟิล์มมีฝุ่น', 'ฟิล์มเคลมประกัน', 'ฟิล์มแตก', 'อื่นๆ'];
+const ITEM_STATUSES = ['รอดำเนินการ', 'อนุมัติ', 'ไม่อนุมัติ'];
+const receiverPresets = {};
+
+// ─── VENDOR LIST ──────────────────────────────────────────────────────────────
+
+function applyVendorList(vendors) {
+  if (!Array.isArray(vendors) || vendors.length === 0) return;
+  vendors.forEach(v => {
+    if (!v.company) return;
+    receiverPresets[v.company] = {
+      contact: v.contact || '',
+      address: v.address || '',
+      phone:   v.phone   || '',
+      prefix:  v.prefix  || 'V',
+    };
+  });
+  const sel = document.getElementById('receiverCompany');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '';
+  vendors.forEach(v => {
+    if (!v.company) return;
+    const opt = document.createElement('option');
+    opt.value       = v.company;
+    opt.textContent = v.company;
+    if (v.company === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  applyReceiverPreset();
+}
+
+async function fetchVendersFromSheet() {
+  if (!scriptUrl) return;
+  try {
+    const res = await fetch(scriptUrl + '?sheet=Vender', { method: 'GET' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      vendorListCache = data;
+      localStorage.setItem('spvi_vendorList', JSON.stringify(data));
+      applyVendorList(data);
+      showToast(`🏪 โหลด vendor list จาก Sheet แล้ว (${data.length} รายการ)`, 'success');
+    }
+  } catch (_) {}
+}
+
+function loadVendorList() {
+  if (vendorListCache && vendorListCache.length > 0) {
+    applyVendorList(vendorListCache);
+  } else if (!scriptUrl) {
+    const sel = document.getElementById('receiverCompany');
+    if (sel) sel.innerHTML = '<option value="" disabled selected>⚠️ ยังไม่มี vendor — กรุณาตั้งค่า Google Sheets</option>';
+  }
+  if (scriptUrl) fetchVendersFromSheet();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  normalizeClaimStatuses();
+  normalizeStoredClaimDates();
+  setTodayDate();
+  refreshNotePickList();
+  addItemRow();
+  addItemRow();
+  loadVendorList();
+  applyReceiverPreset();
+  updateLogCount();
+  renderLog();
+  updateOverdueBadge();
+  updateSyncStatus();
+  updatePendingBadge();
+  document.getElementById('scriptUrl').value = scriptUrl;
+  document.getElementById('sheetId').value   = sheetId;
+  if (sheetId) document.getElementById('btnOpenSheet').style.display = 'flex';
+});
+
+window.addEventListener('online', async () => {
+  const total = pendingQueue.length + pendingStatusQueue.length;
+  if (scriptUrl && total > 0) {
+    showToast('🌐 เชื่อมต่อเครือข่ายสำเร็จ — กำลังส่งข้อมูลอีกครั้ง...', '');
+    await flushPendingQueue();
+    await flushPendingStatusQueue();
+  }
+});
+
+function normalizeClaimStatuses() {
+  let changed = false;
+  claimLog.forEach(r => {
+    if (!Array.isArray(r.items)) return;
+    r.items = r.items.map(it => {
+      if (it && !it.approvalStatus) {
+        changed = true;
+        return { ...it, approvalStatus: 'รอดำเนินการ' };
+      }
+      return it;
+    });
+  });
+  if (changed) localStorage.setItem('spvi_claimLog', JSON.stringify(claimLog));
+}
+
+function formatDateOnlyInBangkok(date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const year = parts.find(p => p.type === 'year')?.value;
+  const month = parts.find(p => p.type === 'month')?.value;
+  const day = parts.find(p => p.type === 'day')?.value;
+  return year && month && day ? `${year}-${month}-${day}` : '';
+}
+
+function normalizeDateOnlyValue(value) {
+  if (value == null || value === '') return '';
+  const raw = String(value).trim();
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const parsed = new Date(raw);
+  if (!isNaN(parsed)) {
+    const normalized = formatDateOnlyInBangkok(parsed);
+    if (normalized) return normalized;
+  }
+
+  const embedded = raw.match(/^\d{4}-\d{2}-\d{2}/);
+  return embedded ? embedded[0] : raw;
+}
+
+function normalizeStoredClaimDates() {
+  let changed = false;
+  claimLog = claimLog.map(claim => {
+    const next = { ...claim };
+    const normalizedDocDate = normalizeDateOnlyValue(claim.docDate);
+
+    if ((claim.docDate || '') !== normalizedDocDate) {
+      next.docDate = normalizedDocDate;
+      changed = true;
+    }
+
+    return next;
+  });
+
+  if (changed) localStorage.setItem('spvi_claimLog', JSON.stringify(claimLog));
+}
+
+function getItemStatusLabel(item) {
+  return (item && ITEM_STATUSES.includes(item.approvalStatus)) ? item.approvalStatus : 'รอดำเนินการ';
+}
+
+function isItemPartial(item) {
+  return getItemStatusLabel(item) === 'อนุมัติ' &&
+    item.approvedQty !== undefined && item.approvedQty !== '' &&
+    Number(item.approvedQty) < Number(item.qty || 1);
+}
+
+function getClaimOverallStatus(claim) {
+  const items = (claim && claim.items) || [];
+  if (!items.length) return 'รอดำเนินการ';
+  const labels = items.map(getItemStatusLabel);
+  if (labels.every(s => s === 'อนุมัติ')) {
+    if (items.some(isItemPartial)) {
+      return claim.partialClosed ? 'ดำเนินการบางส่วน' : 'อนุมัติบางส่วน';
+    }
+    return 'เสร็จสิ้น';
+  }
+  if (labels.every(s => s === 'ไม่อนุมัติ')) return 'ไม่อนุมัติ';
+  if (labels.some(s => s === 'รอดำเนินการ')) return 'รอดำเนินการ';
+  return 'ดำเนินการบางส่วน';
+}
+
+function parseClaimDate(dateStr) {
+  const m = String(normalizeDateOnlyValue(dateStr) || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return isNaN(d) ? null : d;
+}
+
+function isClaimFinished(claim) {
+  const status = getClaimOverallStatus(claim);
+  return status === 'เสร็จสิ้น' || status === 'ไม่อนุมัติ';
+}
+
+function getOverdueInfo(claim, todayStart = null) {
+  if (!claim || isClaimFinished(claim)) return null;
+  const openDate = parseClaimDate(claim.docDate);
+  if (!openDate) return null;
+  const base = todayStart || (() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  })();
+  const ageDays = Math.floor((base - openDate) / (1000 * 60 * 60 * 24));
+  if (ageDays <= OVERDUE_DAY_THRESHOLD) return null;
+  return { ageDays, overdueDays: ageDays - OVERDUE_DAY_THRESHOLD };
+}
+
+function getOverdueClaims() {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return claimLog.map((claim, idx) => {
+    const info = getOverdueInfo(claim, todayStart);
+    return info ? { idx, claim, ...info } : null;
+  }).filter(Boolean);
+}
+
+function updateOverdueBadge() {
+  const bell = document.getElementById('overdueBell');
+  const countEl = document.getElementById('overdueCount');
+  if (!bell || !countEl) return;
+  const jobs = getOverdueClaims();
+  countEl.textContent = jobs.length;
+  bell.classList.toggle('visible', jobs.length > 0);
+  bell.classList.toggle('has-items', jobs.length > 0);
+  if (document.getElementById('overdueModal').classList.contains('open')) renderOverdueList();
+}
+
+function renderOverdueList() {
+  const jobs = getOverdueClaims();
+  const listEl = document.getElementById('overdueList');
+  const metaEl = document.getElementById('overdueMeta');
+  if (!listEl || !metaEl) return;
+
+  if (!jobs.length) {
+    metaEl.textContent = 'ไม่มีงานค้างเกิน 15 วัน';
+    listEl.innerHTML = '<div style="color:var(--gray-400);font-size:13px;">ยอดเยี่ยม! ตอนนี้ไม่มีงานเกินกำหนด</div>';
+    return;
+  }
+
+  metaEl.textContent = `พบงานค้างเกินกำหนด ${jobs.length} รายการ`;
+  listEl.innerHTML = jobs.map(({ idx, claim, ageDays, overdueDays }) => `
+    <div class="overdue-item" onclick="goToClaimFromOverdue(${idx})" title="เปิดไปที่รายการนี้ในประวัติเคลม">
+      <div>
+        <div class="overdue-item-title">${claim.docNo || '-'} / ${claim.claimNo || '-'}</div>
+        <div class="overdue-item-sub">เปิดเคลม ${claim.docDate || '-'} • อายุงาน ${ageDays} วัน • ${claim.receiverCompany || claim.senderCompany || '-'}</div>
+      </div>
+      <div class="overdue-days-chip">เกิน ${overdueDays} วัน</div>
+    </div>
+  `).join('');
+}
+
+function openOverdueModal() {
+  renderOverdueList();
+  document.getElementById('overdueModal').classList.add('open');
+}
+
+function closeOverdueModal() {
+  document.getElementById('overdueModal').classList.remove('open');
+}
+
+function goToClaimFromOverdue(idx) {
+  closeOverdueModal();
+  jumpToClaimInHistory(idx);
+}
+
+function jumpToClaimInHistory(idx) {
+  const claim = claimLog[idx];
+  if (!claim) return;
+  const searchBox = document.getElementById('searchBox');
+  const typeFilter = document.getElementById('typeFilter');
+  if (searchBox) searchBox.value = '';
+  if (typeFilter) typeFilter.value = '';
+  _logFilteredRows = null;
+  logCurrentPage = Math.floor(idx / LOG_PAGE_SIZE) + 1;
+  logFocusClaimIndex = idx;
+  switchTab('log');
+}
+
+function getStatusChip(status) {
+  if (status === 'เสร็จสิ้น') return '<span class="status-chip status-done">เสร็จสิ้น</span>';
+  if (status === 'อนุมัติบางส่วน') return '<span class="status-chip status-partial-approved">อนุมัติบางส่วน</span>';
+  if (status === 'ไม่อนุมัติ') return '<span class="status-chip status-rejected">ไม่อนุมัติ</span>';
+  if (status === 'ดำเนินการบางส่วน') return '<span class="status-chip status-partial">ดำเนินการบางส่วน</span>';
+  return '<span class="status-chip status-waiting">รอดำเนินการ</span>';
+}
+
+function applyReceiverPreset() {
+  const company = document.getElementById('receiverCompany').value.trim();
+  const preset = receiverPresets[company];
+  if (preset) {
+    document.getElementById('receiverContact').value = preset.contact;
+    document.getElementById('receiverAddress').value = preset.address;
+    document.getElementById('receiverPhone').value = preset.phone;
+  }
+  refreshDocNoByReceiver();
+}
+
+function getDateTimeCode(d) {
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${yy}${mm}${dd}${hh}${mi}`;
+}
+
+function getReceiverPrefix() {
+  const company = document.getElementById('receiverCompany').value.trim();
+  const preset = receiverPresets[company];
+  if (preset && preset.prefix) return preset.prefix;
+  return 'V';
+}
+
+function refreshDocNoByReceiver() {
+  const code = getDateTimeCode(new Date());
+  document.getElementById('docNo').value = `${getReceiverPrefix()}-SPVI${code}`;
+}
+
+function setTodayDate() {
+  const d = new Date();
+  const str = d.toISOString().split('T')[0];
+  document.getElementById('docDate').value = str;
+  autoDocIds();
+}
+
+function autoDocIds() {
+  const code = getDateTimeCode(new Date());
+  document.getElementById('docNo').value   = `${getReceiverPrefix()}-SPVI${code}`;
+  document.getElementById('claimNo').value = `CL-${code}`;
+}
+
+function generateDocIds() {
+  const code = getDateTimeCode(new Date());
+  document.getElementById('docNo').value   = `${getReceiverPrefix()}-SPVI${code}`;
+  document.getElementById('claimNo').value = `CL-${code}`;
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'log') renderLog();
+  if (name === 'stats') renderStats();
+}
+
+// ─── ITEMS TABLE ──────────────────────────────────────────────────────────────
+let rowId = 0;
+const COL_ORDER = ['sku','product','serial','qty','price','note'];
+
+function addItemRow() {
+  const id = rowId++;
+  const tbody = document.getElementById('itemsBody');
+  const idx = tbody.rows.length + 1;
+  const tr = document.createElement('tr');
+  tr.id = 'row-' + id;
+  tr.innerHTML = `
+    <td class="item-num">${idx}</td>
+    <td><input class="item-input" placeholder="บาร์โค้ด/SKU (อัตโนมัติ)" data-col="sku" style="font-family:monospace;min-width:100px;" /></td>
+    <td><input class="item-input" placeholder="ชื่อสินค้า/รุ่น (อัตโนมัติ)" data-col="product" /></td>
+    <td><input class="item-input" placeholder="SN/IMEI (#ยิงปืนสแกนช่องนี้)" data-col="serial" style="font-family:monospace;" /></td>
+    <td><input class="item-input" type="number" placeholder="0" data-col="qty" style="width:60px;text-align:center;" /></td>
+    <td><input class="item-input" type="number" placeholder="0.00 (อัตโนมัติ)" data-col="price" style="text-align:right;" /></td>
+    <td><select class="item-input" data-col="note" style="min-width:130px;"><option value="">— เลือกหมายเหตุ —</option></select><input class="item-input note-custom-input" data-col="note-custom" placeholder="ระบุหมายเหตุ..." style="display:none;min-width:130px;margin-top:4px;" /></td>
+    <td><button class="btn-del-row" onclick="removeRow('row-${id}')">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+
+  tr.querySelectorAll('.item-input').forEach(function(input) {
+    input.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const col = this.dataset.col;
+      const colIdx = COL_ORDER.indexOf(col);
+      if (col === 'sku') {
+        const skuVal = this.value.trim();
+        const matched = lookupSKU(skuVal, tr);
+        const resolvedSku = tr.querySelector('[data-col="sku"]').value.trim();
+        if (resolvedSku) {
+          const existingRow = Array.from(document.querySelectorAll('#itemsBody tr'))
+            .find(r => r !== tr && r.querySelector('[data-col="sku"]')?.value.trim() === resolvedSku);
+          if (existingRow) {
+            const qtyInput = existingRow.querySelector('[data-col="qty"]');
+            qtyInput.value = (parseInt(qtyInput.value) || 0) + 1;
+            tr.querySelector('[data-col="sku"]').value = '';
+            tr.querySelector('[data-col="product"]').value = '';
+            tr.querySelector('[data-col="price"]').value = '';
+            tr.querySelector('[data-col="qty"]').value = '';
+            updateTotalQty();
+            this.focus();
+            showToast('✅ เพิ่มจำนวน ' + resolvedSku + ' → ' + qtyInput.value, 'success');
+            return;
+          }
+        }
+        tr.querySelector('[data-col="' + (matched ? 'serial' : 'product') + '"]').focus();
+      } else if (col === 'serial') {
+        lookupSKU(this.value.trim(), tr, true);
+        const resolvedSku = tr.querySelector('[data-col="sku"]').value.trim();
+        const resolvedSerial = tr.querySelector('[data-col="serial"]').value.trim();
+        if (resolvedSku && !resolvedSerial) {
+          const existingRow = Array.from(document.querySelectorAll('#itemsBody tr'))
+            .find(r => r !== tr && r.querySelector('[data-col="sku"]')?.value.trim() === resolvedSku);
+          if (existingRow) {
+            const qtyInput = existingRow.querySelector('[data-col="qty"]');
+            qtyInput.value = (parseInt(qtyInput.value) || 0) + 1;
+            tr.querySelector('[data-col="sku"]').value = '';
+            tr.querySelector('[data-col="product"]').value = '';
+            tr.querySelector('[data-col="price"]').value = '';
+            tr.querySelector('[data-col="qty"]').value = '';
+            this.value = '';
+            updateTotalQty();
+            this.focus();
+            showToast('✅ เพิ่มจำนวน ' + resolvedSku + ' → ' + qtyInput.value, 'success');
+            return;
+          }
+        }
+        const allRows = Array.from(document.querySelectorAll('#itemsBody tr'));
+        const rowIndex = allRows.indexOf(tr);
+        const nextRow = allRows[rowIndex + 1];
+        if (nextRow) {
+          nextRow.querySelector('[data-col="serial"]').focus();
+        } else {
+          addItemRow();
+          const updatedRows = document.querySelectorAll('#itemsBody tr');
+          updatedRows[updatedRows.length - 1].querySelector('[data-col="serial"]').focus();
+        }
+      } else if (col === 'note' || colIdx === COL_ORDER.length - 1) {
+        syncSymptomFromItemNotes();
+        addItemRow();
+        const allRows = document.querySelectorAll('#itemsBody tr');
+        allRows[allRows.length - 1].querySelector('[data-col="sku"]').focus();
+      } else {
+        const next = tr.querySelector('[data-col="' + COL_ORDER[colIdx + 1] + '"]');
+        if (next) next.focus();
+      }
+    });
+  });
+
+  const noteSelect = tr.querySelector('[data-col="note"]');
+  const noteCustomInput = tr.querySelector('[data-col="note-custom"]');
+  NOTE_PRESETS.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    noteSelect.appendChild(opt);
+  });
+  noteSelect.addEventListener('change', function() {
+    if (this.value === 'อื่นๆ') {
+      noteCustomInput.style.display = '';
+      noteCustomInput.focus();
+    } else {
+      noteCustomInput.style.display = 'none';
+      noteCustomInput.value = '';
+    }
+    syncSymptomFromItemNotes();
+  });
+  noteCustomInput.addEventListener('input', function() {
+    syncSymptomFromItemNotes();
+  });
+
+  const serialInput = tr.querySelector('[data-col="serial"]');
+  serialInput.addEventListener('change', function() {
+    checkSerialAgainstSOH(tr);
+  });
+
+  const qtyInput = tr.querySelector('[data-col="qty"]');
+  qtyInput.addEventListener('input', function() {
+    updateTotalQty();
+    checkQtyAgainstSOH(tr);
+    checkSerialAgainstSOH(tr);
+  });
+
+  reIndexRows();
+}
+
+function checkSerialAgainstSOH(tr) {
+  if (!Object.keys(sohData).length) return false;
+  const serialVal = tr.querySelector('[data-col="serial"]').value.trim();
+  if (!serialVal) return false;
+  const entry = sohData[serialVal];
+  if (!entry || !entry.serial) return false;
+  const availQty = (entry.serialAvailableQty !== undefined) ? entry.serialAvailableQty : entry.availableQty;
+
+  const totalUsed = Array.from(document.querySelectorAll('#itemsBody tr')).reduce((sum, row) => {
+    const rowSerial = row.querySelector('[data-col="serial"]')?.value.trim();
+    if (rowSerial === serialVal) {
+      sum += parseFloat(row.querySelector('[data-col="qty"]')?.value) || 0;
+    }
+    return sum;
+  }, 0);
+
+  if (totalUsed > availQty) {
+    showToast(`⚠️ Serial ${serialVal} — จำนวนรวม ${totalUsed} เกิน AVAILABLE_QTY (${availQty}) ใน SOH`, 'error');
+    return true;
+  }
+  return false;
+}
+
+function checkQtyAgainstSOH(tr) {
+  if (!Object.keys(sohData).length) return;
+  if (tr.querySelector('[data-col="serial"]').value.trim()) return;
+  const skuVal = tr.querySelector('[data-col="sku"]').value.trim();
+  const serialVal = tr.querySelector('[data-col="serial"]').value.trim();
+  const key = skuVal || serialVal;
+  if (!key) return;
+  const entry = sohData[key];
+  if (!entry || entry.availableQty === undefined) return;
+
+  const totalUsed = Array.from(document.querySelectorAll('#itemsBody tr')).reduce((sum, row) => {
+    const rowSku = row.querySelector('[data-col="sku"]')?.value.trim();
+    const rowSerial = row.querySelector('[data-col="serial"]')?.value.trim();
+    if (rowSku === entry.sku || (entry.serial && rowSerial === entry.serial)) {
+      sum += parseFloat(row.querySelector('[data-col="qty"]')?.value) || 0;
+    }
+    return sum;
+  }, 0);
+
+  if (totalUsed > entry.availableQty) {
+    showToast(`⚠️ SKU ${entry.sku} — จำนวนรวม ${totalUsed} เกิน AVAILABLE_QTY (${entry.availableQty}) ใน SOH`, 'error');
+    return true;
+  }
+  return false;
+}
+
+function refreshNotePickList() {
+  document.querySelectorAll('#itemsBody [data-col="note"]').forEach(sel => {
+    const current = sel.value;
+    const allValues = Array.from(new Set([...NOTE_PRESETS]));
+    sel.innerHTML = '<option value="">— เลือกหมายเหตุ —</option>' +
+      allValues.map(v => `<option value="${v.replace(/"/g,'&quot;')}">${v}</option>`).join('');
+    if (current) sel.value = current;
+    const customInput = sel.closest('td')?.querySelector('[data-col="note-custom"]');
+    if (customInput) customInput.style.display = (sel.value === 'อื่นๆ') ? '' : 'none';
+  });
+}
+
+function openNoteSuggestions() {}
+function restoreNoteValueIfEmpty() {}
+
+function removeRow(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const sku     = el.querySelector('[data-col="sku"]')?.value.trim();
+  const product = el.querySelector('[data-col="product"]')?.value.trim();
+  const label   = sku || product;
+  const msg     = label ? `ลบรายการ "${label}" ออกจากใบเคลม?` : 'ลบรายการนี้ออกจากใบเคลม?';
+  if (!confirm(msg)) return;
+  el.remove();
+  reIndexRows();
+  syncSymptomFromItemNotes();
+}
+
+function reIndexRows() {
+  document.querySelectorAll('#itemsBody tr').forEach((tr, i) => {
+    tr.querySelector('.item-num').textContent = i + 1;
+  });
+  updateTotalQty();
+}
+
+function updateTotalQty() {
+  const total = Array.from(document.querySelectorAll('#itemsBody [data-col="qty"]'))
+    .reduce((s, el) => {
+      const v = el.value.trim();
+      return s + (Number(v) || 0);
+    }, 0);
+  const el = document.getElementById('totalQty');
+  if (el) el.textContent = total || 0;
+}
+
+function getItems() {
+  const rows = [];
+  document.querySelectorAll('#itemsBody tr').forEach(tr => {
+    const skuEl     = tr.querySelector('[data-col=sku]');
+    const productEl = tr.querySelector('[data-col=product]');
+    const sku     = skuEl     ? skuEl.value.trim()     : '';
+    const product = productEl ? productEl.value.trim() : '';
+    if (!product && !sku) return;
+    rows.push({
+      sku,
+      product: product || sku,
+      serial: tr.querySelector('[data-col=serial]').value.trim(),
+      qty: tr.querySelector('[data-col=qty]').value || 1,
+      price: tr.querySelector('[data-col=price]').value || 0,
+      note: (() => { const s = tr.querySelector('[data-col=note]'); if (s.value === 'อื่นๆ') { return tr.querySelector('[data-col=note-custom]')?.value.trim() || ''; } return s.value.trim(); })(),
+    });
+  });
+  return rows;
+}
+
+function syncClaimType() {
+  selectedTypes = [];
+  document.querySelectorAll('input[name=claimType]:checked').forEach(c => selectedTypes.push(c.value));
+}
+
+function syncSymptomFromItemNotes() {
+  const symptomEl = document.getElementById('symptom');
+  if (!symptomEl) return;
+
+  const autoNotes = Array.from(new Set(
+    Array.from(document.querySelectorAll('#itemsBody [data-col="note"]'))
+      .map(el => {
+        if (el.value === 'อื่นๆ') {
+          return el.closest('td')?.querySelector('[data-col="note-custom"]')?.value.trim() || '';
+        }
+        return el.value.trim();
+      })
+      .filter(Boolean)
+  ));
+
+  const currentParts = symptomEl.value
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const prevAutoNotes = symptomEl._prevAutoNotes || [];
+  const excludeSet = new Set([...autoNotes, ...prevAutoNotes]);
+  const manualParts = currentParts.filter(part => !excludeSet.has(part));
+  symptomEl._prevAutoNotes = autoNotes;
+  const merged = [...autoNotes, ...manualParts];
+  symptomEl.value = merged.join(', ');
+}
+
+// ─── SAVE TO LOG ──────────────────────────────────────────────────────────────
+function collectFormData() {
+  syncSymptomFromItemNotes();
+  syncClaimType();
+  return {
+    docNo:            document.getElementById('docNo').value.trim(),
+    claimNo:          document.getElementById('claimNo').value.trim(),
+    docDate:          document.getElementById('docDate').value,
+    senderCompany:    document.getElementById('senderCompany').value.trim(),
+    senderContact:    document.getElementById('senderContact').value.trim(),
+    senderAddress:    document.getElementById('senderAddress').value.trim(),
+    senderPhone:      document.getElementById('senderPhone').value.trim(),
+    receiverCompany:  document.getElementById('receiverCompany').value.trim(),
+    receiverContact:  document.getElementById('receiverContact').value.trim(),
+    receiverAddress:  document.getElementById('receiverAddress').value.trim(),
+    receiverPhone:    document.getElementById('receiverPhone').value.trim(),
+    symptom:          document.getElementById('symptom').value.trim(),
+    claimType:        selectedTypes.join(', '),
+    notes:            document.getElementById('notes').value.trim(),
+    items:            getItems(),
+    savedAt:          nowBKK(),
+  };
+}
+
+function saveToLog() {
+  const data = collectFormData();
+  data.items = (data.items || []).map(it => ({ ...it, approvalStatus: getItemStatusLabel(it) }));
+  if (!data.docNo || !data.claimNo) { showToast('กรุณากรอกรหัสเอกสาร', 'error'); return; }
+  if (!data.senderCompany)          { showToast('กรุณากรอกชื่อบริษัทผู้ส่ง', 'error'); return; }
+  if (data.items.length === 0)      { showToast('กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ', 'error'); return; }
+
+  const dup = claimLog.find(r => r.claimNo === data.claimNo);
+  if (dup) { showToast(`เลขที่ ${data.claimNo} มีอยู่แล้วใน Log`, 'error'); return; }
+
+  claimLog.unshift(data);
+  localStorage.setItem('spvi_claimLog', JSON.stringify(claimLog));
+  updateLogCount();
+  updateOverdueBadge();
+  showToast(`✅ บันทึก ${data.claimNo} สำเร็จ`, 'success');
+
+  if (scriptUrl) pushToSheets(data);
+
+  return data;
+}
+
+function saveAndPreview() {
+  const data = saveToLog();
+  if (data) openPreviewModal(data);
+}
+
+// ─── GOOGLE SHEETS ────────────────────────────────────────────────────────────
+async function pushToSheets(data, skipQueue = false) {
+  const rows = (data.items && data.items.length ? data.items : [{}]).map((it, i) => ({
+    'เลขที่ใบรับซ่อม': data.docNo,
+    'เลขที่เอกสาร':    data.claimNo,
+    'วันที่':          data.docDate,
+    'ผู้ส่ง':          data.senderCompany,
+    'ผู้ติดต่อส่ง':    data.senderContact,
+    'ที่อยู่ผู้ส่ง':   data.senderAddress,
+    'โทรผู้ส่ง':       data.senderPhone,
+    'ผู้รับ':          data.receiverCompany,
+    'ผู้ติดต่อรับ':    data.receiverContact,
+    'ที่อยู่ผู้รับ':   data.receiverAddress,
+    'โทรผู้รับ':       data.receiverPhone,
+    'อาการ':           data.symptom,
+    'ประเภท':          data.claimType,
+    'จำนวนรายการ':     data.items.length,
+    'รายการ':          it.product || '',
+    'หมายเหตุ':        data.notes,
+    'บันทึกเมื่อ':     data.savedAt,
+    'สถานะเอกสาร':      getClaimOverallStatus(data),
+    'ประเภทบันทึก':      'สร้างเคลม',
+    'ลำดับสินค้า':      i + 1,
+    'SKU':             it.sku || '',
+    'สินค้า':          it.product || '',
+    'Serial No.':      it.serial || '',
+    'จำนวน':           Number(it.qty) || 1,
+    'มูลค่า':          Number(it.price) || 0,
+    'หมายเหตุสินค้า':   it.note || '',
+    'สถานะรายการ':      getItemStatusLabel(it),
+    'จำนวนอนุมัติ':    getItemStatusLabel(it) === 'อนุมัติ' ? (it.approvedQty !== undefined ? Number(it.approvedQty) : Number(it.qty) || 1) : 0,
+    'เหตุผลสถานะ':     it.statusNote || '',
+    'อัพเดทเมื่อ':      data.claimUpdatedAt || '',
+    'Booking No.':     data.bookingNo || '',
+    'วันที่ Booking':   data.bookingDate || '',
+    'CN Number':       data.cnNumber || '',
+    'วันที่ CN':        data.cnDate || '',
+    'จำนวนวัน Booking→CN': dateDiffDays(data.bookingDate, data.cnDate),
+    'เลขที่โอนคืนคลัง': data.returnNo || '',
+    'วันที่คืนสินค้า':  data.returnDate || '',
+    'เลขที่ Adjust':    data.adjustNo || '',
+    'วันที่ Adjust':    data.adjustDate || '',
+    'เสร็จสิ้นเมื่อ':   data.completedAt || '',
+  }));
+
+  let anyFailed = false;
+  for (const row of rows) {
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(row),
+      });
+    } catch (e) {
+      anyFailed = true;
+      break;
+    }
+  }
+
+  if (anyFailed) {
+    if (!skipQueue) {
+      const alreadyQueued = pendingQueue.some(q => q.claimNo === data.claimNo);
+      if (!alreadyQueued) {
+        pendingQueue.push({ ...data, _queuedAt: nowBKK() });
+        localStorage.setItem('spvi_pendingQueue', JSON.stringify(pendingQueue));
+        updatePendingBadge();
+      }
+      showToast(`⚠️ เครือข่ายขัดข้อง — บันทึก ${data.claimNo} ไว้ในคิวรอส่งแล้ว`, 'error');
+    }
+    return false;
+  } else {
+    showToast(`📊 ส่งข้อมูลไป Google Sheets แล้ว ${rows.length} รายการ`, 'success');
+    return true;
+  }
+}
+
+function saveSheetsConfig() {
+  scriptUrl = document.getElementById('scriptUrl').value.trim();
+  sheetId   = document.getElementById('sheetId').value.trim();
+  localStorage.setItem('spvi_scriptUrl', scriptUrl);
+  localStorage.setItem('spvi_sheetId', sheetId);
+  closeSheetsModal();
+  updateSyncStatus();
+  if (sheetId) { document.getElementById('btnOpenSheet').style.display = 'flex'; document.getElementById('btnOpenSheetLog').style.display = 'flex'; }
+  showToast('💾 บันทึกการตั้งค่า Sheets แล้ว', 'success');
+}
+
+function updateSyncStatus() {
+  const el = document.getElementById('syncStatus');
+  if (scriptUrl) { el.innerHTML = '<span>🟢</span> เชื่อมต่อ Google Sheets'; }
+  else { el.innerHTML = '<span>⚪</span> ยังไม่เชื่อมต่อ Google Sheets'; }
+  const show = !!scriptUrl;
+  const restoreBtn = document.getElementById('btnRestoreFromSheets');
+  if (restoreBtn) restoreBtn.style.display = show ? 'flex' : 'none';
+  const openSheetLog = document.getElementById('btnOpenSheetLog');
+  if (openSheetLog && show) openSheetLog.style.display = 'flex';
+}
+
+async function flushPendingStatusQueue() {
+  if (!scriptUrl || pendingStatusQueue.length === 0) return;
+  const succeeded = [];
+  for (const item of [...pendingStatusQueue]) {
+    const { _queuedAt, ...claimData } = item;
+    let ok = true;
+    for (const row of (claimData.items || []).map((it, i) => ({
+      '_action': 'updateStatus',
+      'เลขที่เอกสาร': claimData.claimNo,
+      'ลำดับสินค้า': i + 1,
+      'สถานะเอกสาร': getClaimOverallStatus(claimData),
+      'สถานะรายการ': getItemStatusLabel(it),
+      'จำนวนอนุมัติ': getItemStatusLabel(it) === 'อนุมัติ' ? (it.approvedQty !== undefined ? Number(it.approvedQty) : Number(it.qty) || 1) : 0,
+      'บันทึกเมื่อ': claimData.savedAt || '',
+      'หมายเหตุสินค้า': it.note || '',
+      'สถานะรายการ': getItemStatusLabel(it),
+      'จำนวนอนุมัติ': getItemStatusLabel(it) === 'อนุมัติ' ? (it.approvedQty !== undefined ? Number(it.approvedQty) : Number(it.qty) || 1) : 0,
+      'เหตุผลสถานะ':     it.statusNote || '',
+      'อัพเดทเมื่อ':      claimData.claimUpdatedAt || claimData.statusUpdatedAt || '',
+      'Booking No.': claimData.bookingNo || '',
+      'วันที่ Booking':   claimData.bookingDate || '',
+      'CN Number': claimData.cnNumber || '',
+      'วันที่ CN':        claimData.cnDate || '',
+      'จำนวนวัน Booking→CN': dateDiffDays(claimData.bookingDate, claimData.cnDate),
+      'เลขที่โอนคืนคลัง': claimData.returnNo || '',
+      'วันที่คืนสินค้า':  claimData.returnDate || '',
+      'เลขที่ Adjust':    claimData.adjustNo || '',
+      'วันที่ Adjust':    claimData.adjustDate || '',
+      'เสร็จสิ้นเมื่อ':   claimData.completedAt || '',
+    }))) {
+      try {
+        await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(row) });
+      } catch (e) { ok = false; break; }
+    }
+    if (ok) succeeded.push(item.claimNo);
+  }
+  pendingStatusQueue = pendingStatusQueue.filter(q => !succeeded.includes(q.claimNo));
+  localStorage.setItem('spvi_pendingStatusQueue', JSON.stringify(pendingStatusQueue));
+  updatePendingBadge();
+}
+
+function updatePendingBadge() {
+  const badge = document.getElementById('pendingBadge');
+  const countEl = document.getElementById('pendingCount');
+  if (!badge) return;
+  const total = pendingQueue.length + pendingStatusQueue.length;
+  if (total > 0) {
+    countEl.textContent = total;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+async function flushPendingQueue() {
+  if (!scriptUrl || pendingQueue.length === 0) return;
+  const badge = document.getElementById('pendingBadge');
+  if (badge) { badge.classList.add('visible'); badge.querySelector('#pendingCount').textContent = '...'; }
+
+  const succeeded = [];
+  for (const item of [...pendingQueue]) {
+    const { _queuedAt, ...claimData } = item;
+    const ok = await pushToSheets(claimData, true);
+    if (ok) succeeded.push(item.claimNo);
+  }
+
+  pendingQueue = pendingQueue.filter(q => !succeeded.includes(q.claimNo));
+  localStorage.setItem('spvi_pendingQueue', JSON.stringify(pendingQueue));
+  updatePendingBadge();
+
+  if (pendingQueue.length === 0) {
+    showToast('✅ ส่งข้อมูลค้างส่งไป Sheets สำเร็จทั้งหมด', 'success');
+  } else {
+    showToast(`⚠️ ยังส่งไม่ได้ ${pendingQueue.length} รายการ — เครือข่ายยังไม่ปกติ`, 'error');
+  }
+}
+
+function openSheetsModal() { document.getElementById('sheetsModal').classList.add('open'); }
+function closeSheetsModal() { document.getElementById('sheetsModal').classList.remove('open'); }
+function openSheetLink() {
+  if (sheetId) window.open('https://docs.google.com/spreadsheets/d/' + sheetId, '_blank');
+  else showToast('ยังไม่ได้กรอก Sheet ID', 'error');
+}
+
+// ─── LOG TABLE ────────────────────────────────────────────────────────────────
+let logCurrentPage = 1;
+const LOG_PAGE_SIZE = 20;
+
+function renderLog(data) {
+  if (data !== undefined) _logFilteredRows = data;
+  const rows = _logFilteredRows || claimLog;
+  const wrap = document.getElementById('logTableWrap');
+  if (rows.length === 0) {
+    wrap.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">ยังไม่มีประวัติการเคลม</div>
+      <div class="empty-sub">กรอกแบบฟอร์มและบันทึกเพื่อเริ่มต้น</div>
+    </div>`;
+    logCurrentPage = 1;
+    return;
+  }
+
+  const totalPages = Math.ceil(rows.length / LOG_PAGE_SIZE);
+  if (logCurrentPage > totalPages) logCurrentPage = totalPages;
+  const start = (logCurrentPage - 1) * LOG_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + LOG_PAGE_SIZE);
+
+  const tbody = pageRows.map((r) => {
+    const claimIdx = claimLog.indexOf(r);
+    const focusClass = claimIdx === logFocusClaimIndex ? ' class="log-row-focus"' : '';
+    const badge = getTypeBadge(r.claimType);
+    const statusChip = getStatusChip(getClaimOverallStatus(r));
+    const dt = r.docDate ? r.docDate : '-';
+    const itemList = r.items.map(it => it.product).join(', ') || '-';
+    return `<tr data-claim-index="${claimIdx}"${focusClass}>
+      <td class="mono" style="font-size:11px;">${r.docNo}</td>
+      <td class="mono" style="font-size:11px;">${r.claimNo}</td>
+      <td style="font-size:12px;">${dt}</td>
+      <td style="font-size:12.5px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.receiverCompany}</td>
+      <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${itemList}</td>
+      <td style="white-space:normal;">${badge}</td>
+      <td>${statusChip}</td>
+      <td><div class="row-actions">
+        <button class="row-btn row-btn-view" onclick="openStatusModal(${claimIdx})">🛠️ อัปเดต</button>
+        <button class="row-btn row-btn-view" onclick="previewFromLog(${claimIdx})">👁️ ดู</button>
+        <button class="row-btn row-btn-del" onclick="deleteLogEntry(${claimIdx})">✕</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  const pagBtns = Array.from({ length: totalPages }, (_, p) => {
+    const pg = p + 1;
+    const active = pg === logCurrentPage;
+    return `<button onclick="goLogPage(${pg})" style="padding:4px 10px;border-radius:6px;border:1px solid ${active ? 'var(--blue)' : 'var(--gray-200)'};background:${active ? 'var(--blue)' : '#fff'};color:${active ? '#fff' : 'var(--gray-600)'};font-size:12px;cursor:pointer;">${pg}</button>`;
+  }).join('');
+
+  const paginationBar = totalPages > 1 ? `
+    <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;padding:10px 12px;flex-wrap:wrap;border-top:1px solid var(--gray-100);">
+      <span style="font-size:12px;color:var(--gray-400);margin-right:4px;">รายการ ${start + 1}–${Math.min(start + LOG_PAGE_SIZE, rows.length)} จาก ${rows.length}</span>
+      <button onclick="goLogPage(${logCurrentPage - 1})" ${logCurrentPage === 1 ? 'disabled' : ''} style="padding:4px 10px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;cursor:pointer;font-size:13px;">‹</button>
+      ${pagBtns}
+      <button onclick="goLogPage(${logCurrentPage + 1})" ${logCurrentPage === totalPages ? 'disabled' : ''} style="padding:4px 10px;border-radius:6px;border:1px solid var(--gray-200);background:#fff;cursor:pointer;font-size:13px;">›</button>
+    </div>` : '';
+
+  wrap.innerHTML = `<table class="log-table">
+    <thead><tr>
+      <th style="width:130px;">เลขที่ใบรับซ่อม</th>
+      <th style="width:120px;">เลขที่เอกสาร</th>
+      <th style="width:90px;">วันที่</th>
+      <th style="width:140px;">บริษัทผู้รับ</th>
+      <th style="width:100px;">รายการสินค้า</th>
+      <th>ประเภท</th>
+      <th style="width:110px;">สถานะ</th>
+      <th style="width:140px;">Action</th>
+    </tr></thead>
+    <tbody>${tbody}</tbody>
+  </table>${paginationBar}`;
+
+  if (logFocusClaimIndex >= 0) {
+    const focusRow = wrap.querySelector(`tr[data-claim-index="${logFocusClaimIndex}"]`);
+    if (focusRow) {
+      focusRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => focusRow.classList.remove('log-row-focus'), 2600);
+    }
+    logFocusClaimIndex = -1;
+  }
+}
+
+function goLogPage(pg) {
+  const rows = _logFilteredRows || claimLog;
+  const totalPages = Math.max(1, Math.ceil(rows.length / LOG_PAGE_SIZE));
+  logCurrentPage = Math.max(1, Math.min(pg, totalPages));
+  renderLog(rows);
+  document.getElementById('logTableWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function nowBKK() {
+  const now = new Date();
+  const bkk = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  const iso = bkk.toISOString().replace('Z', '+07:00');
+  return iso;
+}
+
+function formatThaiDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Bangkok' }) +
+    ' ' + d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+}
+
+function combineDateWithSubmitTime(dateOnly, submitStamp) {
+  const day = normalizeDateOnlyValue(dateOnly);
+  const ts = submitStamp || nowBKK();
+  if (!day) return ts;
+  const timePart = String(ts).split('T')[1] || '00:00:00+07:00';
+  return `${day}T${timePart}`;
+}
+
+function onBookingNoInput() {
+  const val = document.getElementById('claimBookingNo').value.trim();
+  if (!val) {
+    document.getElementById('claimBookingDate').value = '';
+  }
+}
+
+function onCnNumberInput() {
+  const val = document.getElementById('claimCnNumber').value.trim();
+  if (!val) {
+    document.getElementById('claimCnDate').value = '';
+  }
+}
+
+function onReturnNoInput() {
+  const val = document.getElementById('claimReturnNo').value.trim();
+  if (!val) {
+    document.getElementById('claimReturnDateDisplay').textContent = '';
+  }
+}
+
+function onAdjustNoInput() {
+  const val = document.getElementById('claimAdjustNo').value.trim();
+  if (!val) {
+    document.getElementById('claimAdjustDateDisplay').textContent = '';
+  }
+}
+
+function openStatusModal(idx) {
+  const claim = claimLog[idx];
+  if (!claim) return;
+  activeStatusClaimIndex = idx;
+  document.getElementById('statusModalSub').textContent = `${claim.docNo} | ${claim.claimNo}`;
+  const closeBtn = document.getElementById('btnClosePartialJob');
+  if (closeBtn) closeBtn.style.display = getClaimOverallStatus(claim) === 'อนุมัติบางส่วน' ? 'inline-flex' : 'none';
+  const body = document.getElementById('statusTableBody');
+  body.innerHTML = (claim.items || []).map((it, i) => {
+    const current = getItemStatusLabel(it);
+    const options = ITEM_STATUSES.map(s => `<option value="${s}" ${s===current?'selected':''}>${s}</option>`).join('');
+    const maxQty = Number(it.qty) || 1;
+    const approvedQtyVal = (it.approvedQty !== undefined && it.approvedQty !== '') ? Number(it.approvedQty) : maxQty;
+    const showQty = current === 'อนุมัติ';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td class="mono" style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.sku || '-'}</td>
+      <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.product || '-'}</td>
+      <td class="mono">${it.serial || '-'}</td>
+      <td>${maxQty}</td>
+      <td>${Number(it.price || 0).toLocaleString()}</td>
+      <td>
+        <select class="status-select" data-item-index="${i}" data-max-qty="${maxQty}" onchange="toggleApprovedQty(this)">${options}</select>
+        <div style="margin-top:4px;display:${showQty?'flex':'none'};align-items:center;gap:4px;" class="approved-qty-wrap" data-item-index="${i}">
+          <input type="number" class="approved-qty-input" data-item-index="${i}" min="1" max="${maxQty}" value="${approvedQtyVal}" />
+          <span style="font-size:11px;color:var(--gray-400);">/ ${maxQty}</span>
+        </div>
+      </td>
+      <td style="max-width:170px;"><input type="text" class="item-status-note-input" data-note-index="${i}" value="${(it.statusNote || '').replace(/"/g, '&quot;')}" placeholder="เหตุผล..." style="width:100%;border:1px solid #e2e8f0;border-radius:5px;padding:4px 7px;font-size:12px;font-family:'Sarabun',sans-serif;" /></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('claimBookingNo').value = claim.bookingNo || '';
+  document.getElementById('claimBookingDate').value = claim.bookingDate ? String(claim.bookingDate).slice(0, 10) : '';
+  document.getElementById('claimCnNumber').value = claim.cnNumber || '';
+  document.getElementById('claimCnDate').value = claim.cnDate ? String(claim.cnDate).slice(0, 10) : '';
+  document.getElementById('claimReturnNo').value = claim.returnNo || '';
+  document.getElementById('claimAdjustNo').value = claim.adjustNo || '';
+  document.getElementById('claimReturnDateDisplay').textContent = claim.returnDate ? '📅 ' + formatThaiDateTime(claim.returnDate) : '';
+  document.getElementById('claimAdjustDateDisplay').textContent = claim.adjustDate ? '📅 ' + formatThaiDateTime(claim.adjustDate) : '';
+  document.getElementById('statusModal').classList.add('open');
+}
+
+function closeStatusModal() {
+  document.getElementById('statusModal').classList.remove('open');
+  activeStatusClaimIndex = -1;
+}
+
+async function closePartialJob() {
+  if (activeStatusClaimIndex < 0) return;
+  const claim = claimLog[activeStatusClaimIndex];
+  if (!claim) return;
+  const submitStamp = nowBKK();
+  claim.partialClosed = true;
+  claim.statusUpdatedAt = submitStamp;
+  claim.claimUpdatedAt = claim.statusUpdatedAt;
+  localStorage.setItem('spvi_claimLog', JSON.stringify(claimLog));
+  renderLog();
+  renderStats();
+  updateOverdueBadge();
+  closeStatusModal();
+  showToast('✓ ปิดงานแล้ว — บันทึกเป็นดำเนินการบางส่วน', 'success');
+  if (scriptUrl) await pushStatusUpdateToSheets(claim);
+}
+
+function showAllWaitingDocs() {
+  const list = document.querySelector('.waiting-doc-list');
+  const btn = document.getElementById('btnShowAllWaiting');
+  if (!list || !btn) return;
+  list.innerHTML = _waitingRowsCache.join('');
+  btn.remove();
+}
+
+function toggleApprovedQty(sel) {
+  const i = sel.dataset.itemIndex;
+  const wrap = document.querySelector(`.approved-qty-wrap[data-item-index="${i}"]`);
+  if (!wrap) return;
+  const show = sel.value === 'อนุมัติ';
+  wrap.style.display = show ? 'flex' : 'none';
+  if (show) {
+    const input = wrap.querySelector('.approved-qty-input');
+    if (input && !input.value) input.value = sel.dataset.maxQty;
+  }
+}
+
+async function saveClaimStatusUpdates() {
+  if (activeStatusClaimIndex < 0) return;
+  const claim = claimLog[activeStatusClaimIndex];
+  if (!claim) return;
+
+  const selects = Array.from(document.querySelectorAll('#statusTableBody .status-select'));
+  selects.forEach(sel => {
+    const i = Number(sel.dataset.itemIndex);
+    if (claim.items[i]) {
+      claim.items[i].approvalStatus = sel.value;
+      if (sel.value === 'อนุมัติ') {
+        const qtyInput = document.querySelector(`.approved-qty-input[data-item-index="${i}"]`);
+        claim.items[i].approvedQty = qtyInput ? Math.min(Number(qtyInput.value) || Number(sel.dataset.maxQty), Number(sel.dataset.maxQty)) : Number(claim.items[i].qty) || 1;
+      } else {
+        delete claim.items[i].approvedQty;
+      }
+    }
+  });
+
+  const newBookingNo = document.getElementById('claimBookingNo').value.trim();
+  const newBookingDateInput = document.getElementById('claimBookingDate').value;
+  const newCnNumber  = document.getElementById('claimCnNumber').value.trim();
+  const newCnDateInput = document.getElementById('claimCnDate').value;
+  const newReturnNo  = document.getElementById('claimReturnNo').value.trim();
+  const newAdjustNo  = document.getElementById('claimAdjustNo').value.trim();
+  const submitStamp = nowBKK();
+
+  const prevBookingDateOnly = normalizeDateOnlyValue(claim.bookingDate);
+  const prevCnDateOnly = normalizeDateOnlyValue(claim.cnDate);
+  const bookingChanged =
+    newBookingNo !== (claim.bookingNo || '') ||
+    (!!newBookingNo && newBookingDateInput !== prevBookingDateOnly);
+  const cnChanged =
+    newCnNumber !== (claim.cnNumber || '') ||
+    (!!newCnNumber && newCnDateInput !== prevCnDateOnly);
+
+  if (newBookingNo) {
+    if (bookingChanged) {
+      claim.bookingDate = combineDateWithSubmitTime(newBookingDateInput || submitStamp.slice(0, 10), submitStamp);
+    }
+  } else if (!newBookingNo) {
+    claim.bookingDate = '';
+  }
+  if (newCnNumber) {
+    if (cnChanged) {
+      claim.cnDate = combineDateWithSubmitTime(newCnDateInput || submitStamp.slice(0, 10), submitStamp);
+    }
+  } else {
+    claim.cnDate = '';
+  }
+  if (newReturnNo && newReturnNo !== claim.returnNo) {
+    claim.returnDate = submitStamp;
+  } else if (!newReturnNo) {
+    claim.returnDate = '';
+  }
+  if (newAdjustNo && newAdjustNo !== claim.adjustNo) {
+    claim.adjustDate = submitStamp;
+  } else if (!newAdjustNo) {
+    claim.adjustDate = '';
+  }
+  claim.bookingNo = newBookingNo;
+  claim.cnNumber  = newCnNumber;
+  claim.returnNo  = newReturnNo;
+  claim.adjustNo  = newAdjustNo;
+  document.querySelectorAll('#statusTableBody .item-status-note-input').forEach(input => {
+    const i = Number(input.dataset.noteIndex);
+    if (claim.items[i] !== undefined) claim.items[i].statusNote = input.value.trim();
+  });
+  claim.statusUpdatedAt = submitStamp;
+  claim.claimUpdatedAt = claim.statusUpdatedAt;
+  if (getClaimOverallStatus(claim) === 'เสร็จสิ้น' && !claim.completedAt) {
+    claim.completedAt = submitStamp;
+  }
+
+  localStorage.setItem('spvi_claimLog', JSON.stringify(claimLog));
+  renderLog();
+  renderStats();
+  updateOverdueBadge();
+  closeStatusModal();
+  showToast('✅ บันทึกสถานะรายการแล้ว', 'success');
+
+  if (scriptUrl) await pushStatusUpdateToSheets(claim);
+}
+
+async function pushStatusUpdateToSheets(claim) {
+  const rows = (claim.items || []).map((it, i) => ({
+    '_action':         'updateStatus',
+    'เลขที่ใบรับซ่อม': claim.docNo,
+    'เลขที่เอกสาร':    claim.claimNo,
+    'วันที่':          claim.docDate,
+    'ผู้ส่ง':          claim.senderCompany,
+    'ผู้ติดต่อส่ง':    claim.senderContact,
+    'โทรผู้ส่ง':       claim.senderPhone,
+    'ผู้รับ':          claim.receiverCompany,
+    'ผู้ติดต่อรับ':    claim.receiverContact,
+    'อาการ':           claim.symptom,
+    'ประเภท':          claim.claimType,
+    'จำนวนรายการ':     (claim.items || []).length,
+    'รายการ':          it.product || '',
+    'หมายเหตุ':        claim.notes || '',
+    'บันทึกเมื่อ':     claim.savedAt || '',
+    'สถานะเอกสาร':      getClaimOverallStatus(claim),
+    'ประเภทบันทึก':      'อัปเดตสถานะ',
+    'ลำดับสินค้า':      i + 1,
+    'SKU':             it.sku || '',
+    'สินค้า':          it.product || '',
+    'Serial No.':      it.serial || '',
+    'จำนวน':           Number(it.qty) || 1,
+    'มูลค่า':          Number(it.price) || 0,
+    'หมายเหตุสินค้า':   it.note || '',
+    'สถานะรายการ':      getItemStatusLabel(it),
+    'จำนวนอนุมัติ':    getItemStatusLabel(it) === 'อนุมัติ' ? (it.approvedQty !== undefined ? Number(it.approvedQty) : Number(it.qty) || 1) : 0,
+    'เหตุผลสถานะ':     it.statusNote || '',
+    'อัพเดทเมื่อ':      claim.claimUpdatedAt || claim.statusUpdatedAt || '',
+    'Booking No.':     claim.bookingNo || '',
+    'วันที่ Booking':   claim.bookingDate || '',
+    'CN Number':       claim.cnNumber || '',
+    'วันที่ CN':        claim.cnDate || '',
+    'จำนวนวัน Booking→CN': dateDiffDays(claim.bookingDate, claim.cnDate),
+    'เลขที่โอนคืนคลัง': claim.returnNo || '',
+    'วันที่คืนสินค้า':  claim.returnDate || '',
+    'เลขที่ Adjust':    claim.adjustNo || '',
+    'วันที่ Adjust':    claim.adjustDate || '',
+    'เสร็จสิ้นเมื่อ':   claim.completedAt || '',
+  }));
+
+  let failed = 0;
+  for (const row of rows) {
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(row),
+      });
+    } catch (e) {
+      failed++;
+    }
+  }
+  if (failed > 0) {
+    const alreadyQueued = pendingStatusQueue.some(q => q.claimNo === claim.claimNo);
+    if (!alreadyQueued) {
+      pendingStatusQueue.push({ ...claim, _queuedAt: nowBKK() });
+      localStorage.setItem('spvi_pendingStatusQueue', JSON.stringify(pendingStatusQueue));
+      updatePendingBadge();
+    }
+    showToast(`⚠️ เครือข่ายขัดข้อง — บันทึกอัปเดตสถานะ ${claim.claimNo} ไว้ในคิวรอส่งแล้ว`, 'error');
+  }
+}
+
+function getTypeBadge(type) {
+  if (!type) return '<span class="badge" style="background:#f1f5f9;color:#64748b;">-</span>';
+  const types = String(type).split(',').map(t => t.trim()).filter(Boolean);
+  if (!types.length) return '<span class="badge" style="background:#f1f5f9;color:#64748b;">-</span>';
+  return types.map((t) => {
+    if (t.includes('ในประกัน'))  return `<span class="badge badge-warranty" style="margin-right:4px;">${t}</span>`;
+    if (t.includes('นอกประกัน')) return `<span class="badge badge-nowarranty" style="margin-right:4px;">${t}</span>`;
+    if (t.includes('เคลม'))      return `<span class="badge badge-claim" style="margin-right:4px;">${t}</span>`;
+    if (t.includes('ตรวจ'))      return `<span class="badge badge-inspect" style="margin-right:4px;">${t}</span>`;
+    return `<span class="badge" style="background:#f1f5f9;color:#64748b;margin-right:4px;">${t}</span>`;
+  }).join('');
+}
+
+function filterLog() {
+  const q    = document.getElementById('searchBox').value.toLowerCase();
+  const type = document.getElementById('typeFilter').value;
+  if (!q && !type) {
+    _logFilteredRows = null;
+    logCurrentPage = 1;
+    renderLog();
+    return;
+  }
+  const filtered = claimLog.filter(r => {
+    const matchQ = !q || [r.docNo, r.claimNo, r.receiverCompany, r.claimType, ...(r.items||[]).map(i=>i.product)].some(s => s&&s.toLowerCase().includes(q));
+    const matchT = !type || (r.claimType && r.claimType.includes(type));
+    return matchQ && matchT;
+  });
+  logCurrentPage = 1;
+  renderLog(filtered);
+}
+
+function updateLogCount() {
+  document.getElementById('logCount').textContent = claimLog.length;
+}
+
+function deleteLogEntry(idx) {
+  if (!confirm('ลบรายการนี้?')) return;
+  claimLog.splice(idx, 1);
+  localStorage.setItem('spvi_claimLog', JSON.stringify(claimLog));
+  _logFilteredRows = null;
+  updateLogCount();
+  renderLog();
+  updateOverdueBadge();
+}
+
+function clearAllLog() {
+  if (!confirm('ล้าง Log ทั้งหมด?')) return;
+  claimLog = [];
+  localStorage.setItem('spvi_claimLog', JSON.stringify(claimLog));
+  _logFilteredRows = null;
+  updateLogCount();
+  renderLog();
+  updateOverdueBadge();
+  showToast('🗑️ ล้าง Log เรียบร้อย');
+}
+
+function previewFromLog(idx) {
+  openPreviewModal(claimLog[idx]);
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const total = claimLog.length;
+  const allItems = claimLog.flatMap(r => (r.items || []));
+  const approvedItems = allItems.filter(it => getItemStatusLabel(it) === 'อนุมัติ').length;
+  const rejectedItems = allItems.filter(it => getItemStatusLabel(it) === 'ไม่อนุมัติ').length;
+  const waitingItems = allItems.filter(it => getItemStatusLabel(it) === 'รอดำเนินการ').length;
+  const waitingDocs = claimLog.filter(r =>
+    (r.items || []).some(it => getItemStatusLabel(it) === 'รอดำเนินการ') ||
+    ((r.items || []).some(it => isItemPartial(it)) && !r.partialClosed)
+  );
+  const byType = {};
+  claimLog.forEach(r => {
+    const types = r.claimType ? r.claimType.split(',').map(s => s.trim()).filter(Boolean) : ['ไม่ระบุ'];
+    types.forEach(t => { byType[t] = (byType[t] || 0) + 1; });
+  });
+  const thisMonth = claimLog.filter(r => r.docDate && r.docDate.startsWith(nowBKK().slice(0,7))).length;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><span class="stat-icon">📋</span><div><div class="stat-num">${total}</div><div class="stat-label">รายการทั้งหมด</div></div></div>
+    <div class="stat-card"><span class="stat-icon">📅</span><div><div class="stat-num">${thisMonth}</div><div class="stat-label">เดือนนี้</div></div></div>
+    <div class="stat-card"><span class="stat-icon">📦</span><div><div class="stat-num">${allItems.length}</div><div class="stat-label">จำนวนสินค้าเคลมทั้งหมด</div></div></div>
+    <div class="stat-card"><span class="stat-icon">✅</span><div><div class="stat-num">${approvedItems}</div><div class="stat-label">อนุมัติ</div></div></div>
+    <div class="stat-card"><span class="stat-icon">❌</span><div><div class="stat-num">${rejectedItems}</div><div class="stat-label">ไม่อนุมัติ</div></div></div>
+    <div class="stat-card"><span class="stat-icon">⏳</span><div><div class="stat-num">${waitingItems}</div><div class="stat-label">รอดำเนินการ</div></div></div>
+  `;
+
+  const typeRows = Object.entries(byType).map(([t, n]) => {
+    const pct = total ? Math.round(n / total * 100) : 0;
+    return `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+      <div style="flex:1;font-size:13.5px;color:var(--gray-800);">${getTypeBadge(t)} ${t}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--navy);font-size:15px;">${n}</div>
+      <div style="width:120px;background:var(--gray-100);border-radius:20px;overflow:hidden;height:8px;">
+        <div style="width:${pct}%;background:var(--blue);height:100%;border-radius:20px;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--gray-400);width:32px;text-align:right;">${pct}%</div>
+    </div>
+  `;
+  }).join('') || '<div style="color:var(--gray-400);font-size:13px;">ยังไม่มีข้อมูล</div>';
+
+  const WAIT_LIMIT = 10;
+  const waitingRowsAll = waitingDocs.map(r => {
+    const claimIdx = claimLog.indexOf(r);
+    const overdue = getOverdueInfo(r);
+    const waitingCount = (r.items || []).filter(it => getItemStatusLabel(it) === 'รอดำเนินการ').length;
+    const partialCount = (r.items || []).filter(it => isItemPartial(it)).length;
+    const detail = [
+      waitingCount > 0 ? `ค้าง ${waitingCount} รายการ` : '',
+      partialCount > 0 ? `🔔 ติดตาม ${partialCount} รายการ` : '',
+      overdue ? `เกิน ${overdue.overdueDays} วัน` : '',
+    ].filter(Boolean).join('  ');
+    return `<div class="waiting-doc-item${overdue ? ' overdue' : ''}" onclick="openStatusModal(${claimIdx})" title="คลิกเพื่ออัปเดตสถานะรายการ">
+      <div>
+        <div class="mono" style="font-size:11px;">${r.docNo} / ${r.claimNo}</div>
+        <div style="color:var(--gray-600);">${r.senderCompany || '-'}</div>
+      </div>
+      <div>${getStatusChip(getClaimOverallStatus(r))}${overdue ? `<span class="overdue-pill">เกิน ${overdue.overdueDays} วัน</span>` : ''} <span style="margin-left:8px;color:var(--gray-600);">${detail}</span></div>
+    </div>`;
+  });
+  _waitingRowsCache = waitingRowsAll;
+  const waitingRows = waitingRowsAll.slice(0, WAIT_LIMIT).join('') || '<div style="color:var(--gray-400);font-size:13px;">ไม่มีเอกสารที่รออนุมัติ</div>';
+  const showMoreBtn = waitingRowsAll.length > WAIT_LIMIT
+    ? `<button id="btnShowAllWaiting" onclick="showAllWaitingDocs()" style="margin-top:8px;width:100%;padding:7px;border:1px dashed var(--gray-300);border-radius:8px;background:#fff;color:var(--gray-500);font-size:12px;cursor:pointer;">ดูทั้งหมด (${waitingRowsAll.length} รายการ)</button>`
+    : '';
+
+  document.getElementById('statsBody').innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">สรุปตามประเภทการเคลม</div>
+      ${typeRows}
+    </div>
+    <div style="height:1px;background:var(--gray-100);margin:14px 0;"></div>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">เอกสารรออนุมัติ</div>
+      <div class="waiting-doc-list">${waitingRows}</div>
+      ${showMoreBtn}
+    </div>
+  `;
+}
+
+// ─── PREVIEW MODAL ────────────────────────────────────────────────────────────
+function openFormPreview() {
+  openPreviewModal(collectFormData());
+}
+
+function openPreviewModal(data) {
+  lastPreviewData = JSON.parse(JSON.stringify(data || {}));
+  document.getElementById('previewFrame').srcdoc = generateClaimHtml(data);
+  document.getElementById('previewModal').classList.add('open');
+}
+
+function closePreviewModal() {
+  document.getElementById('previewModal').classList.remove('open');
+  document.getElementById('previewFrame').removeAttribute('srcdoc');
+}
+
+function exportPDFFromModal() {
+  const frame = document.getElementById('previewFrame');
+  const btn = frame.closest('#previewModal').querySelector('.btn-orange');
+  const origText = btn.textContent;
+  btn.textContent = '⏳ กำลังสร้าง PDF...';
+  btn.disabled = true;
+
+  ensurePdfThaiFontLoaded().then(() => {
+    const data = normalizeClaimDataForPdf(lastPreviewData || collectFormData());
+    const filename = ('SPVI-' + (data.claimNo || nowBKK().slice(0,10))).replace(/[\\/:*?"<>|]/g, '-') + '.pdf';
+    pdfMake.createPdf(buildPdfDefinition(data)).download(filename);
+  }).catch(err => {
+    showToast('❌ สร้าง PDF ไม่ได้: ' + err.message, 'error');
+  }).finally(() => {
+    btn.textContent = origText;
+    btn.disabled = false;
+  });
+}
+
+function normalizeThaiForPdf(text) {
+  if (text == null) return '';
+  return String(text)
+    .normalize('NFC')
+    .replace(/\u0E4D([\u0E48-\u0E4B])\u0E32/g, '$1\u0E33')
+    .replace(/([\u0E48-\u0E4B])\u0E4D\u0E32/g, '$1\u0E33');
+}
+
+function normalizeClaimDataForPdf(src) {
+  const data = JSON.parse(JSON.stringify(src || {}));
+  const textFields = [
+    'docNo','claimNo','docDate','senderCompany','senderContact','senderAddress','senderPhone',
+    'receiverCompany','receiverContact','receiverAddress','receiverPhone','symptom','claimType','notes'
+  ];
+  textFields.forEach(k => { if (k in data) data[k] = normalizeThaiForPdf(data[k]); });
+  if (Array.isArray(data.items)) {
+    data.items = data.items.map(it => ({
+      ...it,
+      sku: normalizeThaiForPdf(it.sku),
+      product: normalizeThaiForPdf(it.product),
+      serial: normalizeThaiForPdf(it.serial),
+      note: normalizeThaiForPdf(it.note),
+    }));
+  }
+  return data;
+}
+
+function ensurePdfThaiFontLoaded() {
+  if (thaiFontLoadPromise) return thaiFontLoadPromise;
+  thaiFontLoadPromise = (async function() {
+    const regularFile = 'Sarabun-Regular.ttf';
+    const boldFile = 'Sarabun-Bold.ttf';
+
+    async function putFontToVfs(fileName, urls) {
+      if (pdfMake.vfs[fileName]) return;
+      let lastErr = null;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const buf = await res.arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          let binary = '';
+          const chunk = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+          }
+          pdfMake.vfs[fileName] = btoa(binary);
+          return;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('โหลดฟอนต์ไม่สำเร็จ');
+    }
+
+    await putFontToVfs(regularFile, [
+      'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sarabun/Sarabun-Regular.ttf',
+      'https://raw.githubusercontent.com/google/fonts/main/ofl/sarabun/Sarabun-Regular.ttf',
+      'https://fonts.gstatic.com/s/sarabun/v16/DtVmJx26TKEr37c9aBBx.ttf',
+    ]);
+    await putFontToVfs(boldFile, [
+      'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sarabun/Sarabun-Bold.ttf',
+      'https://raw.githubusercontent.com/google/fonts/main/ofl/sarabun/Sarabun-Bold.ttf',
+      'https://fonts.gstatic.com/s/sarabun/v16/DtVmJx26TKEr37c9aBBs.ttf',
+    ]);
+
+    pdfMake.fonts = {
+      ...pdfMake.fonts,
+      SarabunPdf: {
+        normal: regularFile,
+        bold: boldFile,
+        italics: regularFile,
+        bolditalics: boldFile,
+      },
+    };
+  })();
+  thaiFontLoadPromise.catch(() => { thaiFontLoadPromise = null; });
+  return thaiFontLoadPromise;
+}
+
+function buildPdfDefinition(data) {
+  const items = data.items && data.items.length ? data.items : [{ product: '-', serial: '-', qty: '-', price: '-', note: '-' }];
+  const totalQty = items.reduce((s, it) => s + (Number(it.qty) || 0), 0);
+  const itemRows = items.map((it, i) => [
+    { text: String(i + 1), fontSize: 7, color: '#1f2937' },
+    { text: String(it.product || '-'), fontSize: 7, color: '#1f2937' },
+    { text: String(it.sku || '-'), fontSize: 7, color: '#1f2937' },
+    { text: String(it.serial || '-'), fontSize: 7, color: '#1f2937' },
+    { text: String(it.qty || 1), fontSize: 7, color: '#1f2937' },
+    { text: String(Number(it.price || 0).toLocaleString()), fontSize: 7, color: '#1f2937' },
+    { text: String(it.note || ''), fontSize: 7, color: '#1f2937' },
+  ]);
+  const sumRow = [
+    { text: 'รวมจำนวน', colSpan: 4, fontSize: 7, bold: true, color: '#000000', alignment: 'right', fillColor: '#D6E8F7', border: [true, true, false, true] }, {}, {}, {},
+    { text: String(totalQty), fontSize: 7, bold: true, color: '#1f2937', alignment: 'center', fillColor: '#D6E8F7', border: [true, true, true, true] },
+    { text: '', colSpan: 2, border: [false, true, true, true] }, {},
+  ];
+
+  return {
+    pageSize: 'A4',
+    pageOrientation: 'portrait',
+    pageMargins: [18, 18, 18, 40],
+    defaultStyle: { font: 'SarabunPdf', fontSize: 9, color: '#1e293b' },
+    content: [
+      {
+        table: {
+          widths: [370, '*'],
+          body: [[
+            {
+              stack: [
+                { text: 'บริษัท เอส พี วี ไอ จำกัด (มหาชน)', color: '#1a1a1a', bold: true, fontSize: 12 },
+                { text: `${data.senderAddress || ''}`, color: '#555555', fontSize: 7, margin: [0, 2, 0, 0], noWrap: true },
+                { text: `Tel. ${data.senderPhone || ''} | ติดต่อ ${data.senderContact || ''}`, color: '#555555', fontSize: 7, noWrap: true },
+              ],
+              fillColor: '#ffffff',
+            },
+            {
+              stack: [
+                { text: 'ใบปะหน้าส่งซ่อม / เคลมสินค้า', alignment: 'right', color: '#000000', bold: true, fontSize: 11 },
+                { text: 'Return & Repair Cover Sheet', alignment: 'right', color: '#555555', fontSize: 8 },
+              ],
+              fillColor: '#ffffff',
+            },
+          ]],
+        },
+        layout: {
+          hLineWidth: () => 0,
+          vLineWidth: () => 0,
+          paddingLeft: () => 10,
+          paddingRight: () => 10,
+          paddingTop: () => 10,
+          paddingBottom: () => 10,
+        },
+        margin: [0, 0, 0, 0],
+      },
+      {
+        canvas: [
+          { type: 'line', x1: 0, y1: 0, x2: 559, y2: 0, lineWidth: 2, lineColor: '#E87C2A' },
+        ],
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          widths: ['*', '*', '*'],
+          body: [[
+            { text: `เลขที่ใบรับซ่อม\n${data.docNo || ''}`, bold: true, fontSize: 9, fillColor: '#D6E8F7' },
+            { text: `เลขที่เอกสาร\n${data.claimNo || ''}`, bold: true, fontSize: 9, fillColor: '#D6E8F7' },
+            { text: `วันที่\n${data.docDate || ''}`, bold: true, fontSize: 9, fillColor: '#D6E8F7' },
+          ]],
+        },
+        layout: {
+          hLineColor: '#000000',
+          vLineColor: '#000000',
+          hLineWidth: () => 1,
+          vLineWidth: (i) => (i === 1 ? 1.5 : 1),
+          paddingLeft: () => 10,
+          paddingRight: () => 10,
+          paddingTop: () => 8,
+          paddingBottom: () => 8,
+        },
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          widths: ['*', '*'],
+          body: [[
+            {
+              stack: [
+                { text: 'ผู้ส่ง (FROM)', bold: true, color: '#000000' },
+                { text: data.senderCompany || '', margin: [0, 2, 0, 0], bold: true },
+                { text: data.senderAddress || '', fontSize: 8 },
+                { text: `ผู้ติดต่อ: ${data.senderContact || ''} | Tel: ${data.senderPhone || ''}`, fontSize: 8 },
+              ],
+            },
+            {
+              stack: [
+                { text: 'ส่งถึง (TO)', bold: true, color: '#000000' },
+                { text: data.receiverCompany || '', margin: [0, 2, 0, 0], bold: true },
+                { text: data.receiverAddress || '', fontSize: 8 },
+                { text: `ผู้ติดต่อ: ${data.receiverContact || ''} | Tel: ${data.receiverPhone || ''}`, fontSize: 8 },
+              ],
+            },
+          ]],
+        },
+        layout: {
+          hLineColor: '#000000',
+          vLineColor: '#000000',
+          paddingLeft: () => 8,
+          paddingRight: () => 8,
+          paddingTop: () => 8,
+          paddingBottom: () => 8,
+        },
+        margin: [0, 0, 0, 8],
+      },
+      { text: 'รายการสินค้า', bold: true, color: '#000000', margin: [0, 0, 0, 4] },
+      {
+        table: {
+          headerRows: 1,
+          dontBreakRows: true,
+          widths: [14, '*', 72, 70, 24, 34, 72],
+          body: [
+            [
+              { text: '#', bold: true, fillColor: '#f0f0f0', color: '#1a1a1a', fontSize: 7 },
+              { text: 'รายละเอียด / รุ่น', bold: true, fillColor: '#f0f0f0', color: '#1a1a1a', fontSize: 7 },
+              { text: 'SKU / บาร์โค้ด', bold: true, fillColor: '#f0f0f0', color: '#1a1a1a', fontSize: 7 },
+              { text: 'Serial No.', bold: true, fillColor: '#f0f0f0', color: '#1a1a1a', fontSize: 7 },
+              { text: 'จำนวน', bold: true, fillColor: '#f0f0f0', color: '#1a1a1a', fontSize: 7 },
+              { text: 'มูลค่า (บาท/ชิ้น)', bold: true, fillColor: '#f0f0f0', color: '#1a1a1a', fontSize: 7 },
+              { text: 'หมายเหตุ', bold: true, fillColor: '#f0f0f0', color: '#1a1a1a', fontSize: 7 },
+            ],
+            ...itemRows,
+            sumRow,
+          ],
+        },
+        layout: {
+          hLineColor: '#000000',
+          vLineColor: '#000000',
+          hLineWidth: () => 1,
+          vLineWidth: () => 1,
+          paddingLeft: () => 4,
+          paddingRight: () => 4,
+          paddingTop: () => 1.5,
+          paddingBottom: () => 1.5,
+        },
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          widths: ['*', '*'],
+          body: [[
+            {
+              stack: [
+                { text: 'อาการเสีย / ปัญหา', fontSize: 9, bold: true, color: '#000000', margin: [0, 0, 0, 4] },
+                { text: data.symptom || '-', fontSize: 8, color: '#1f2937' },
+              ],
+            },
+            {
+              stack: [
+                { text: 'ประเภทการส่ง', fontSize: 9, bold: true, color: '#000000', margin: [0, 0, 0, 4] },
+                { text: data.claimType || '-', fontSize: 8, color: '#1f2937' },
+              ],
+            },
+          ]],
+        },
+        layout: {
+          hLineColor: '#000000',
+          vLineColor: '#000000',
+          paddingLeft: () => 8,
+          paddingRight: () => 8,
+          paddingTop: () => 8,
+          paddingBottom: () => 8,
+        },
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          widths: ['*', '*'],
+          body: [[
+            { text: `ผู้ส่ง / Sender\n${data.senderCompany || ''}\n\nลายมือชื่อ .............................. วันที่ ............`, alignment: 'center', fontSize: 8 },
+            { text: `ผู้รับ / Receiver\n${data.receiverCompany || ''}\n\nลายมือชื่อ .............................. วันที่ ............`, alignment: 'center', fontSize: 8 },
+          ]],
+        },
+        layout: {
+          hLineColor: '#000000',
+          vLineColor: '#000000',
+          paddingLeft: () => 8,
+          paddingRight: () => 8,
+          paddingTop: () => 8,
+          paddingBottom: () => 8,
+        },
+      },
+    ],
+    footer: function(currentPage, pageCount) {
+      return {
+        margin: [18, 0, 18, 6],
+        table: {
+          widths: ['*'],
+          body: [[
+            {
+              text: `เอกสารนี้ออกโดยระบบจัดการเคลม SPVI | ${data.claimNo || '-'} | ${data.docDate || '-'} | หน้า ${currentPage}/${pageCount}`,
+              alignment: 'center',
+              color: '#555555',
+              fillColor: '#ffffff',
+              fontSize: 8,
+            },
+          ]],
+        },
+        layout: {
+          hLineColor: '#000000',
+          vLineColor: '#000000',
+          hLineWidth: () => 1,
+          vLineWidth: () => 1,
+          paddingLeft: () => 8,
+          paddingRight: () => 8,
+          paddingTop: () => 4,
+          paddingBottom: () => 4,
+        },
+      };
+    },
+  };
+}
+
+function generateClaimHtml(data) {
+  const itemsHtml = (data.items || []).map((it, i) => `
+    <tr style="border-bottom:1px solid #eee;">
+      <td style="text-align:center;padding:6px 8px;font-size:12px;">${i+1}</td>
+      <td style="padding:6px 8px;font-size:12.5px;">${it.product}</td>
+      <td style="padding:6px 8px;font-size:11.5px;font-family:monospace;">${it.sku||'-'}</td>
+      <td style="padding:6px 8px;font-size:11.5px;font-family:monospace;">${it.serial||'-'}</td>
+      <td style="padding:6px 8px;text-align:center;font-size:12px;">${it.qty||1}</td>
+      <td style="padding:6px 8px;text-align:right;font-size:12px;">${Number(it.price||0).toLocaleString()}</td>
+      <td style="padding:6px 8px;font-size:12px;">${it.note||''}</td>
+    </tr>
+  `).join('');
+
+  const emptyRows = Math.max(0, 5 - (data.items||[]).length);
+  const emptyHtml = Array(emptyRows).fill(`
+    <tr style="border-bottom:1px solid #eee;">
+      <td style="padding:6px 8px;text-align:center;color:#ddd;">-</td>
+      <td style="padding:10px 8px;"></td><td></td><td></td><td></td><td></td><td></td>
+    </tr>
+  `).join('');
+
+  const types = (data.claimType||'').split(',').map(t=>t.trim()).filter(Boolean);
+  const typeBoxes = ['ซ่อม (ในประกัน)','ซ่อม (นอกประกัน)','เคลม / เปลี่ยนสินค้า','คืนสินค้า','ตรวจสภาพ'].map(t =>
+    `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:12px;">
+      <span style="display:inline-block;width:13px;height:13px;border:2px solid #000000;border-radius:3px;background:${types.includes(t)?'#000000':'white'};"></span>
+      ${t}
+    </span>`
+  ).join('');
+
+  return `<!DOCTYPE html><html><head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Sarabun',sans-serif;padding:20px;color:#1E293B;background:#ffffff;display:flex;justify-content:center;}
+    .sheet{width:794px;}
+    .items-table-preview th{padding:5px 6px !important;font-size:10px !important;line-height:1.25;}
+    .items-table-preview td{padding:4px 6px !important;font-size:10px !important;line-height:1.25;}
+  </style>
+  </head><body>
+  <div class="sheet" style="border:2px solid #333;border-radius:8px;overflow:hidden;">
+    <div style="background:#ffffff;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:flex-start;padding:14px 18px;">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#1a1a1a;">บริษัท เอส พี วี ไอ จำกัด (มหาชน)</div>
+        <div style="font-size:10px;color:#555;margin-top:4px;">${data.senderAddress||''}</div>
+        <div style="font-size:10px;color:#555;">Tel. ${data.senderPhone||''} | ติดต่อ ${data.senderContact||''}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:14px;font-weight:700;color:#000000;">ใบปะหน้าส่งซ่อม / เคลมสินค้า</div>
+        <div style="font-size:10px;color:#555;">Return & Repair Cover Sheet</div>
+      </div>
+    </div>
+    <div style="height:3px;background:#E87C2A;"></div>
+    <div style="background:#D6E8F7;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-bottom:1px solid #bcd6ee;">
+      <div style="padding:10px 14px;border-right:1px solid #bcd6ee;">
+        <div style="font-size:9.5px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">เลขที่ใบรับซ่อม</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:#000000;margin-top:3px;">${data.docNo}</div>
+      </div>
+      <div style="padding:10px 14px;border-right:1px solid #bcd6ee;">
+        <div style="font-size:9.5px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">เลขที่เอกสาร</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:#000000;margin-top:3px;">${data.claimNo}</div>
+      </div>
+      <div style="padding:10px 14px;">
+        <div style="font-size:9.5px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:0.5px;">วันที่</div>
+        <div style="font-size:13px;font-weight:700;color:#000000;margin-top:3px;">${data.docDate}</div>
+      </div>
+    </div>
+    <div style="padding:14px 18px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div style="border:1px solid #E2E8F0;border-radius:6px;padding:10px 13px;">
+          <div style="font-size:10px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">📤 ผู้ส่ง (FROM)</div>
+          <div style="font-size:12.5px;font-weight:600;">${data.senderCompany}</div>
+          <div style="font-size:11.5px;color:#475569;margin-top:3px;">${data.senderAddress}</div>
+          <div style="font-size:11.5px;color:#475569;">ผู้ติดต่อ: ${data.senderContact} | Tel: ${data.senderPhone}</div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:6px;padding:10px 13px;">
+          <div style="font-size:10px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">📥 ส่งถึง (TO)</div>
+          <div style="font-size:12.5px;font-weight:600;">${data.receiverCompany}</div>
+          <div style="font-size:11.5px;color:#475569;margin-top:3px;">${data.receiverAddress}</div>
+          <div style="font-size:11.5px;color:#475569;">ผู้ติดต่อ: ${data.receiverContact} | Tel: ${data.receiverPhone}</div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:700;color:#000000;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">รายการสินค้า</div>
+        <table class="items-table-preview" style="width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed;">
+          <colgroup>
+            <col style="width:30px;" />
+            <col />
+            <col style="width:120px;" />
+            <col style="width:110px;" />
+            <col style="width:50px;" />
+            <col style="width:80px;" />
+            <col style="width:100px;" />
+          </colgroup>
+          <thead>
+            <tr style="background:#f0f0f0;border-bottom:1.5px solid #333;">
+              <th style="color:#1a1a1a;padding:7px 8px;text-align:center;font-size:11px;width:30px;">#</th>
+              <th style="color:#1a1a1a;padding:7px 8px;text-align:left;font-size:11px;">รายละเอียด / รุ่น</th>
+              <th style="color:#1a1a1a;padding:7px 8px;text-align:left;font-size:11px;width:120px;">SKU / บาร์โค้ด</th>
+              <th style="color:#1a1a1a;padding:7px 8px;text-align:left;font-size:11px;width:120px;">Serial No.</th>
+              <th style="color:#1a1a1a;padding:7px 8px;text-align:center;font-size:11px;width:50px;">จำนวน</th>
+              <th style="color:#1a1a1a;padding:7px 8px;text-align:right;font-size:11px;width:80px;">มูลค่า<br>(บาท/ชิ้น)</th>
+              <th style="color:#1a1a1a;padding:7px 8px;text-align:left;font-size:11px;width:120px;">หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}${emptyHtml}</tbody>
+          <tfoot><tr style="background:#D6E8F7;border-top:2px solid #000000;"><td colspan="4" style="padding:5px 8px;text-align:right;font-size:11px;font-weight:700;color:#000000;">รวมจำนวน</td><td style="padding:5px 8px;text-align:center;font-size:12px;font-weight:700;color:#000000;">${(data.items||[]).reduce((s,i)=>s+(Number(i.qty)||0),0)}</td><td colspan="2"></td></tr></tfoot>
+        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div style="border:1px solid #E2E8F0;border-radius:6px;padding:10px 12px;">
+          <div style="font-size:10px;font-weight:700;color:#000000;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;">อาการเสีย / ปัญหา</div>
+          <div style="font-size:12px;min-height:44px;color:#1E293B;">${data.symptom||''}</div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:6px;padding:10px 12px;">
+          <div style="font-size:10px;font-weight:700;color:#000000;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">ประเภทการส่ง</div>
+          <div>${typeBoxes}</div>
+          ${data.notes ? `<div style="font-size:11px;color:#64748B;margin-top:8px;"><b>หมายเหตุ:</b> ${data.notes}</div>` : ''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        ${['ผู้ส่ง / Sender','ผู้รับ / Receiver'].map((label,i) => `
+        <div style="background:#F8FAFC;border-radius:6px;padding:12px 14px;text-align:center;border:1px solid #E2E8F0;">
+          <div style="font-size:11.5px;font-weight:700;color:#000000;margin-bottom:3px;">${label}</div>
+          <div style="font-size:10.5px;color:#64748B;">${i===0?data.senderCompany:data.receiverCompany}</div>
+          <div style="border-bottom:1.5px solid #94A3B8;margin:24px 16px 6px;"></div>
+          <div style="font-size:10px;color:#94A3B8;">ลายมือชื่อ ................................ วันที่ ............</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div style="background:#ffffff;border-top:1px solid #333;text-align:center;padding:7px;font-size:10px;color:#555;">
+      เอกสารนี้ออกโดยระบบจัดการเคลม SPVI | ${data.claimNo || '-'} | ${data.docDate || '-'}
+    </div>
+  </div>
+  </body></html>`;
+}
+
+// ─── SOH IMPORT ───────────────────────────────────────────────────────────────
+function importSOH() {
+  document.getElementById('sohFileInput').click();
+}
+
+function handleSOHFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      sohData = {};
+      const skuAvailMap = {};
+      rows.forEach(row => {
+        const sku = String(row['SKU'] || '').trim();
+        if (!sku) return;
+        const avail = parseFloat(row['AVAILABLE_QTY']) || 0;
+        skuAvailMap[sku] = (skuAvailMap[sku] || 0) + avail;
+      });
+      rows.forEach(row => {
+        const sku = String(row['SKU'] || '').trim();
+        if (!sku) return;
+        const desc = String(row['DESCRIPTION'] || '').trim();
+        const series = String(row['SERIES_NAME'] || '').trim();
+        const description = (series && series !== 'NONE') ? desc + ' [' + series + ']' : desc;
+        const serial = String(row['SERIAL_NO'] || '').trim();
+        const entry = {
+          sku,
+          serial,
+          description,
+          price: parseFloat(row['UNIT_COST']) || 0,
+          availableQty: skuAvailMap[sku] || 0,
+        };
+        sohData[sku] = entry;
+        if (serial) {
+          sohData[serial] = Object.assign({}, entry, {
+            serialAvailableQty: parseFloat(row['AVAILABLE_QTY']) || 0
+          });
+        }
+      });
+      const count = rows.filter(row => String(row['SKU'] || '').trim()).length;
+      const btn = document.getElementById('btnImportSOH');
+      btn.textContent = '📦 SOH: ' + count + ' รายการ';
+      btn.classList.add('soh-loaded');
+      showToast('✅ โหลด SOH สำเร็จ ' + count + ' รายการ', 'success');
+    } catch(err) {
+      showToast('❌ อ่านไฟล์ไม่ได้: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+}
+
+function lookupSKU(val, rowEl, scannedFromSerial) {
+  if (!val || !Object.keys(sohData).length) return false;
+  let entry = sohData[val];
+  let resolvedKey = val;
+  if (!entry) {
+    const csKey = 'CS' + val;
+    if (sohData[csKey]) {
+      entry = sohData[csKey];
+      resolvedKey = csKey;
+    }
+  }
+  if (!entry) return false;
+  rowEl.querySelector('[data-col="sku"]').value = entry.sku || resolvedKey;
+  rowEl.querySelector('[data-col="product"]').value = entry.description;
+  rowEl.querySelector('[data-col="price"]').value   = entry.price;
+  if (!rowEl.querySelector('[data-col="qty"]').value) {
+    rowEl.querySelector('[data-col="qty"]').value = 1;
+  }
+  updateTotalQty();
+  if (scannedFromSerial && (!entry.serial || val === entry.sku || val === (entry.sku || '').replace(/^CS/i, ''))) {
+    rowEl.querySelector('[data-col="serial"]').value = '';
+  }
+  const exceeded = checkQtyAgainstSOH(rowEl);
+  const serialExceeded = checkSerialAgainstSOH(rowEl);
+  if (!exceeded && !serialExceeded) {
+    const matchNote = resolvedKey !== val ? ' (จับคู่ผ่าน ' + resolvedKey + ')' : '';
+    showToast('✅ พบ: ' + entry.description.slice(0, 50) + matchNote, 'success');
+  }
+  return true;
+}
+
+// ─── DATE DIFF HELPER ─────────────────────────────────────────────────────────
+function dateDiffDays(dateA, dateB) {
+  if (!dateA || !dateB) return '';
+  const a = new Date(String(dateA).slice(0, 10));
+  const b = new Date(String(dateB).slice(0, 10));
+  if (isNaN(a) || isNaN(b)) return '';
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
+}
+
+// ─── EXPORT CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  if (claimLog.length === 0) { showToast('ไม่มีข้อมูลสำหรับ Export', 'error'); return; }
+  const headers = ['เลขที่ใบรับซ่อม','เลขที่เอกสาร','วันที่','ผู้ส่ง','ผู้ติดต่อ','เบอร์ผู้ส่ง','ผู้รับ','อาการ','ประเภท','จำนวนรายการ','หมายเหตุ','บันทึกเมื่อ'];
+  const rows = claimLog.map(r => [
+    r.docNo, r.claimNo, r.docDate, r.senderCompany, r.senderContact, r.senderPhone,
+    r.receiverCompany, r.symptom, r.claimType, r.items.length, r.notes, r.savedAt
+  ].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `SPVI_ClaimLog_${nowBKK().slice(0,10)}.csv`;
+  a.click();
+  showToast('📥 Export CSV สำเร็จ', 'success');
+}
+
+// ─── CLEAR FORM ───────────────────────────────────────────────────────────────
+function clearForm() {
+  if (!confirm('ล้างฟอร์มทั้งหมด?')) return;
+  ['symptom','notes'].forEach(id => document.getElementById(id).value = '');
+  document.querySelectorAll('input[name=claimType]').forEach(c => c.checked = false);
+  document.getElementById('itemsBody').innerHTML = '';
+  rowId = 0; addItemRow(); addItemRow();
+  generateDocIds();
+  setTodayDate();
+  showToast('🗑️ ล้างฟอร์มแล้ว');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+const _toastRecent = new Map();
+function showToast(msg, type='') {
+  const key = type + '|' + msg;
+  if (_toastRecent.has(key)) return;
+  _toastRecent.set(key, true);
+  setTimeout(() => _toastRecent.delete(key), 2000);
+  const tc = document.getElementById('toastContainer');
+  while (tc.children.length >= 4) tc.removeChild(tc.firstChild);
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = msg;
+  tc.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ─── RESTORE FROM SHEETS ────────────────────────────────────────────────────
+function reconstructClaimLogFromRows(sheetRows) {
+  const byClaimNo = {};
+  sheetRows.forEach(row => {
+    const claimNo = String(row['เลขที่เอกสาร'] || '').trim();
+    if (!claimNo) return;
+    if (!byClaimNo[claimNo]) byClaimNo[claimNo] = [];
+    byClaimNo[claimNo].push(row);
+  });
+
+  const claims = [];
+  Object.entries(byClaimNo).forEach(([claimNo, rows]) => {
+    const baseRows = rows.filter(r => String(r['ประเภทบันทึก']) === 'สร้างเคลม');
+    const srcRows  = baseRows.length ? baseRows : rows;
+    const meta     = srcRows[0];
+
+    const itemsMap = {};
+    srcRows.forEach(r => {
+      const seq = Number(r['ลำดับสินค้า']) || 1;
+      if (!itemsMap[seq]) {
+        itemsMap[seq] = {
+          sku:            String(r['SKU'] || ''),
+          product:        String(r['สินค้า'] || r['รายการ'] || ''),
+          serial:         String(r['Serial No.'] || ''),
+          qty:            Number(r['จำนวน']) || 1,
+          price:          Number(r['มูลค่า']) || 0,
+          note:           String(r['หมายเหตุสินค้า'] || ''),
+          approvalStatus: String(r['สถานะรายการ'] || 'รอดำเนินการ'),
+          approvedQty:    Number(r['จำนวนอนุมัติ']) || 0,
+        };
+      }
+    });
+
+    rows.filter(r => String(r['ประเภทบันทึก']) === 'อัปเดตสถานะ').forEach(r => {
+      const seq = Number(r['ลำดับสินค้า']) || 1;
+      if (itemsMap[seq]) {
+        itemsMap[seq].approvalStatus = String(r['สถานะรายการ'] || itemsMap[seq].approvalStatus);
+        const restoredApprovedQty = Number(r['จำนวนอนุมัติ']);
+        if (!Number.isNaN(restoredApprovedQty) && restoredApprovedQty > 0) {
+          itemsMap[seq].approvedQty = restoredApprovedQty;
+        }
+        if (r['หมายเหตุสินค้า']) itemsMap[seq].note = String(r['หมายเหตุสินค้า']);
+        if (r['เหตุผลสถานะ']) itemsMap[seq].statusNote = String(r['เหตุผลสถานะ']);
+      }
+    });
+
+    const items = Object.entries(itemsMap)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([, item]) => item);
+
+    const receiverCompany = String(meta['ผู้รับ'] || '');
+    const preset = receiverPresets[receiverCompany] || {};
+
+    claims.push({
+      docNo:           String(meta['เลขที่ใบรับซ่อม'] || ''),
+      claimNo,
+      docDate:         normalizeDateOnlyValue(meta['วันที่']),
+      senderCompany:   String(meta['ผู้ส่ง'] || ''),
+      senderContact:   String(meta['ผู้ติดต่อส่ง'] || ''),
+      senderAddress:   String(meta['ที่อยู่ผู้ส่ง'] || ''),
+      senderPhone:     String(meta['โทรผู้ส่ง'] || ''),
+      receiverCompany,
+      receiverContact: String(meta['ผู้ติดต่อรับ'] || preset.contact || ''),
+      receiverAddress: String(meta['ที่อยู่ผู้รับ'] || preset.address || ''),
+      receiverPhone:   String(meta['โทรผู้รับ']   || preset.phone   || ''),
+      symptom:         String(meta['อาการ'] || ''),
+      claimType:       String(meta['ประเภท'] || ''),
+      notes:           String(meta['หมายเหตุ'] || ''),
+      bookingNo:       String(meta['Booking No.'] || ''),
+      cnNumber:        String(meta['CN Number'] || ''),
+      bookingDate:     String(meta['วันที่ Booking'] || ''),
+      cnDate:          String(meta['วันที่ CN'] || ''),
+      returnNo:        String(meta['เลขที่โอนคืนคลัง'] || ''),
+      returnDate:      String(meta['วันที่คืนสินค้า'] || ''),
+      adjustNo:        String(meta['เลขที่ Adjust'] || ''),
+      adjustDate:      String(meta['วันที่ Adjust'] || ''),
+      items,
+      savedAt:         String(meta['บันทึกเมื่อ'] || ''),
+      claimUpdatedAt:  String(meta['อัพเดทเมื่อ'] || ''),
+      completedAt:     String(meta['เสร็จสิ้นเมื่อ'] || ''),
+
+    });
+  });
+
+  return claims.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+}
+
+async function restoreFromSheets() {
+  if (!scriptUrl) { showToast('ยังไม่ได้ตั้งค่า Script URL', 'error'); return; }
+
+  const btns = ['btnRestoreFromSheets', 'btnRestoreLog']
+    .map(id => document.getElementById(id)).filter(Boolean);
+  btns.forEach(b => { b.disabled = true; b._origText = b.textContent; b.textContent = '⏳ กำลังโหลด...'; });
+
+  try {
+    const res = await fetch(scriptUrl, { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const sheetRows = await res.json();
+
+    if (!Array.isArray(sheetRows) || sheetRows.length === 0) {
+      showToast('ไม่พบข้อมูลใน Google Sheets', 'error');
+      return;
+    }
+
+    const restored    = reconstructClaimLogFromRows(sheetRows);
+    const existingNos = new Set(claimLog.map(r => r.claimNo));
+    const newEntries  = restored.filter(r => !existingNos.has(r.claimNo));
+
+    if (newEntries.length === 0) {
+      showToast('ข้อมูลเป็นปัจจุบันแล้ว ไม่มีรายการใหม่', 'success');
+      return;
+    }
+
+    claimLog = [...claimLog, ...newEntries]
+      .sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    localStorage.setItem('spvi_claimLog', JSON.stringify(claimLog));
+    updateLogCount();
+    renderLog();
+    renderStats();
+    updateOverdueBadge();
+    showToast(`✅ กู้คืน ${newEntries.length} รายการจาก Google Sheets`, 'success');
+    if (document.getElementById('sheetsModal').classList.contains('open')) closeSheetsModal();
+    switchTab('log');
+  } catch (err) {
+    const isNetworkErr = ['Failed to fetch', 'NetworkError', 'Load failed', 'Network request failed']
+      .some(s => err.message.includes(s));
+    const hint = isNetworkErr
+      ? ' → จำเป็นต้อง Deploy ก่อนใช้งาน'
+      : '';
+    showToast('❌ โหลดจาก Sheets ไม่สำเร็จ: ' + err.message + hint, 'error');
+  } finally {
+    btns.forEach(b => { b.disabled = false; b.textContent = b._origText; });
+  }
+}
+
+// ─── COPY APPS SCRIPT ────────────────────────────────────────────────────────
+function copyAppScript() {
+  const code = document.getElementById('appScriptCode').textContent;
+  const btn  = document.getElementById('btnCopyScript');
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy code'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy code'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+document.getElementById('sheetsModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSheetsModal();
+});
+document.getElementById('previewModal').addEventListener('click', function(e) {
+  if (e.target === this) closePreviewModal();
+});
+document.getElementById('statusModal').addEventListener('click', function(e) {
+  if (e.target === this) closeStatusModal();
+});
+</script>
+</body>
+</html>
